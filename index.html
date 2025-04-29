@@ -6,7 +6,6 @@
     <link rel="icon" type="image/png" href="logo.png">
     <title>JMS Transpose Live</title>
     <style>
-        /* Original CSS unchanged */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
@@ -240,7 +239,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Accidentals and Mode in one line -->
         <div class="accidentals-notes-chords">
             <div class="radio-button-group">
                 <label class="radio-button" data-accidental="sharp">Sharps
@@ -259,25 +257,17 @@
                 </label>
             </div>
         </div>
-
-        <!-- Transpose buttons, Semitone display, and Reset button -->
         <div class="controls">
             <button id="transposeMinus">-</button>
             <input type="number" id="semitoneValue" value="0" min="-12" max="12" readonly>
             <button id="transposePlus">+</button>
             <button id="resetButton">Reset</button>
         </div>
-
-        <!-- Text Area -->
         <div id="inputTextArea" contenteditable="false" placeholder="Enter notes or chords here..." style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px;"></div>
-
-        <!-- Title input -->
         <div class="title-controls">
             <label for="username">Title:</label>
             <input type="text" id="username" placeholder="Enter Title">
         </div>
-
-        <!-- Key and Time inputs on the same line -->
         <div class="print-controls">
             <div>
                 <label for="key">Key:</label>
@@ -288,8 +278,6 @@
                 <input type="text" id="time" placeholder="Enter Time Signature">
             </div>
         </div>
-
-        <!-- Print button, Save & Export, and Import buttons on the same line -->
         <div class="controls">
             <button id="printBtn">Print</button>
             <button id="saveBtn">Save</button>
@@ -297,7 +285,6 @@
             <input type="file" id="importFile" style="display: none;">
         </div>
     </div>
-  
     <script>
         const inputTextArea = document.getElementById('inputTextArea');
         const semitoneValue = document.getElementById('semitoneValue');
@@ -327,7 +314,6 @@
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
             const index = sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note);
             if (index === -1) return note;
-
             const transposedIndex = (index + shift + 12) % 12;
             return notes[transposedIndex];
         }
@@ -342,14 +328,12 @@
             return text.replace(/([A-G][#b]*)([\(\)\[\]]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g, (match, note, octave, extension) => {
                 const index = sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note);
                 if (index === -1) return match;
-
                 const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
                 return notes[index] + (octave || '') + (extension || '');
             });
         }
 
         function applyColorAndDots(text) {
-            text = text.replace(/<([^>]+)>/g, '<span class="section-label">$1</span>');
             return text.replace(
                 /([A-G])([#b]?)(['.]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
                 (match, note, accidental, sign, extension) => {
@@ -367,12 +351,17 @@
         }
 
         function formatText(text) {
+            console.log('formatText input:', text);
+            text = text.replace(/<([^>]+?)>/g, (match, content) => {
+                content = content.trim();
+                return /^[A-Za-z0-9\s]+$/.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
+            });
+            console.log('formatText after green:', text);
             if (modePreference === 'chords' || !text.trim()) {
                 return applyColorAndDots(text).replace(/\n/g, '<br>');
             }
-
             const lines = text.split('\n');
-            const formattedLines = [];
+            const formattedLines = lines.map(line => line.trim() ? applyColorAndDots(line) : '');
             const tableData = [];
             let maxCols = 0;
             lines.forEach(line => {
@@ -382,44 +371,37 @@
                     tableData.push(cols);
                 }
             });
-
             tableData.forEach(row => {
                 while (row.length < maxCols) {
                     row.push('');
                 }
             });
-
             const colWidths = new Array(maxCols).fill(0);
             tableData.forEach(row => {
                 row.forEach((col, i) => {
                     colWidths[i] = Math.max(colWidths[i], col.length);
                 });
             });
-
             let tableRowIndex = 0;
-            lines.forEach(line => {
-                if (!line.trim() || !line.includes('|')) {
-                    formattedLines.push(applyColorAndDots(line).replace(/\n/g, '<br>'));
-                    return;
+            for (let i = 0; i < formattedLines.length; i++) {
+                if (!lines[i].trim() || !lines[i].includes('|')) {
+                    continue;
                 }
-
                 const cols = tableData[tableRowIndex];
-                const formattedRow = cols.map((col, i) => {
-                    const paddedCol = col.padEnd(colWidths[i], ' ');
-                    return `<span class='table-cell' style='display: inline-block; width: ${colWidths[i] * 10}px'>${applyColorAndDots(paddedCol)}</span>`;
+                const formattedRow = cols.map((col, j) => {
+                    const paddedCol = col.padEnd(colWidths[j], ' ');
+                    return `<span class='table-cell' style='display: inline-block; width: ${colWidths[j] * 10}px'>${applyColorAndDots(paddedCol)}</span>`;
                 }).join('<span class="table-separator">|</span>');
-
-                formattedLines.push(formattedRow);
+                formattedLines[i] = formattedRow;
                 tableRowIndex++;
-            });
-
-            return formattedLines.join('<br>');
+            }
+            const result = formattedLines.join('<br>');
+            console.log('formatText output:', result);
+            return result;
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const inputTextArea = document.getElementById('inputTextArea');
             let isEditing = false;
-
             inputTextArea.addEventListener('click', function() {
                 if (!isEditing) {
                     isEditing = true;
@@ -427,15 +409,12 @@
                     inputTextArea.focus();
                 }
             });
-
-            inputTextArea.addEventListener('input', function() {
-                originalText = inputTextArea.innerText;
-            });
-
+            inputTextArea.addEventListener('input', handleInputChange);
             document.addEventListener('click', function(event) {
                 if (isEditing && !inputTextArea.contains(event.target)) {
                     isEditing = false;
                     inputTextArea.contentEditable = 'false';
+                    updateTransposition();
                 }
             });
         });
@@ -458,24 +437,13 @@
             .dot-above { top: -0.8em; }
             .dot-below { bottom: -0.8em; }
             .sharp, .flat { font-size: 0.8em; vertical-align: super; }
-            .section-label { font-weight: bold; }
+            .green-section-label { font-weight: bold; color: green; display: inline; }
             #inputTextArea {
                 font-family: monospace;
                 white-space: pre;
             }
         `;
         document.head.appendChild(style);
-
-        function updateTransposition() {
-            let currentText = transposeText(originalText, semitones);
-            currentText = applyAccidentalPreference(currentText);
-            inputTextArea.innerHTML = formatText(currentText);
-            placeCaretAtEnd(inputTextArea);
-
-            let currentKey = transposeText(originalKey, semitones);
-            currentKey = applyAccidentalPreference(currentKey);
-            keyInput.value = currentKey;
-        }
 
         function placeCaretAtEnd(el) {
             el.focus();
@@ -487,6 +455,41 @@
             sel.addRange(range);
         }
 
+        function updateTransposition() {
+            let currentText = transposeText(originalText, semitones);
+            currentText = applyAccidentalPreference(currentText);
+            inputTextArea.innerHTML = '';
+            inputTextArea.innerHTML = formatText(currentText);
+            placeCaretAtEnd(inputTextArea);
+            let currentKey = transposeText(originalKey, semitones);
+            currentKey = applyAccidentalPreference(currentKey);
+            keyInput.value = currentKey;
+        }
+
+        function handleInputChange() {
+            const clone = inputTextArea.cloneNode(true);
+            clone.querySelectorAll('.green-section-label').forEach(span => {
+                span.replaceWith(document.createTextNode(`<${span.textContent}>`));
+            });
+            const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+            let currentText = '';
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'BR') {
+                    currentText += '\n';
+                } else if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent.replace(/[^\S\n]+/g, ' ');
+                    currentText += text;
+                }
+            }
+            console.log('handleInputChange originalText:', currentText);
+            if (semitones === 0) {
+                originalText = currentText;
+            } else {
+                originalText = transposeText(currentText, -semitones);
+            }
+        }
+
         function handleTransposeClick(direction) {
             let newSemitones = semitones;
             if (direction === 'minus' && semitones > -12) {
@@ -496,7 +499,6 @@
             } else {
                 return;
             }
-
             semitones = newSemitones;
             semitoneValue.value = semitones;
             updateTransposition();
@@ -510,30 +512,20 @@
             updateTransposition();
         }
 
-        function handleInputChange() {
-            if (semitones === 0) {
-                originalText = inputTextArea.innerText;
-            } else {
-                const currentText = inputTextArea.innerText;
-                originalText = transposeText(currentText, -semitones);
-            }
-        }
-
         function handleKeyInputChange() {
+            const currentKey = keyInput.value;
             if (semitones === 0) {
-                originalKey = keyInput.value;
+                originalKey = currentKey;
             } else {
-                const currentKey = keyInput.value;
                 originalKey = transposeText(currentKey, -semitones);
             }
         }
 
         function printOutput() {
-            const name = document.getElementById('username').value.trim();
-            const key = document.getElementById('key').value.trim();
-            const keySignature = document.getElementById('time').value.trim();
-            const outputContent = document.getElementById('inputTextArea').innerHTML;
-
+            const name = nameInput.value.trim();
+            const key = keyInput.value.trim();
+            const keySignature = timeInput.value.trim();
+            const outputContent = inputTextArea.innerHTML;
             const printWindow = window.open('', '', 'width=800,height=600');
             printWindow.document.write('<html><head><title>Print Output</title>');
             printWindow.document.write('<style>');
@@ -549,7 +541,7 @@
             printWindow.document.write('.dot-below { bottom: -1em; }');
             printWindow.document.write('.table-cell { text-align: center; display: inline-block; padding: 0 10px; white-space: nowrap; position: relative; vertical-align: middle; line-height: 1; }');
             printWindow.document.write('.table-separator { display: inline-block; font-weight: bold; padding: 0 5px; }');
-            printWindow.document.write('.section-label { font-weight: bold; }');
+            printWindow.document.write('.green-section-label { font-weight: bold; color: green; display: inline; }');
             printWindow.document.write('.content-container { padding: 1cm; white-space: pre; margin: 0; box-sizing: border-box; text-align: justify; line-height: 1.4; }');
             printWindow.document.write('.header, .footer { text-align: center; font-size: 0.8em; position: fixed; width: 100%; background-color: white; box-sizing: border-box; }');
             printWindow.document.write('.header { top: 0; padding: 5px 0; border-bottom: 1px solid black; font-size: 1em; }');
@@ -569,24 +561,20 @@
         }
 
         function saveAndExport() {
-            const name = document.getElementById('username').value.trim();
-            const key = document.getElementById('key').value.trim();
-            const keySignature = document.getElementById('time').value.trim();
-            const outputContent = document.getElementById('inputTextArea').innerHTML;
-
+            const name = nameInput.value.trim();
+            const key = keyInput.value.trim();
+            const keySignature = timeInput.value.trim();
             const state = {
                 title: name,
                 key: key,
                 timeSignature: keySignature,
-                content: outputContent,
+                content: originalText,
                 accidentalPreference,
                 modePreference,
-                semitones: 0 // Always save with semitones set to 0
+                semitones: 0
             };
-
             const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
             const fileName = `${name}-${key}-${keySignature}.json`;
-
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -598,36 +586,23 @@
         function importState(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 const state = JSON.parse(e.target.result);
-
-                // Restore input fields with saved values
-                document.getElementById('username').value = state.title || '';
-                document.getElementById('key').value = state.key || '';
-                document.getElementById('time').value = state.timeSignature || '';
-                inputTextArea.innerHTML = state.content || '';
-
-                // Set originalText and originalKey to the imported content
-                originalText = inputTextArea.innerText || '';
+                nameInput.value = state.title || '';
+                keyInput.value = state.key || '';
+                timeInput.value = state.timeSignature || '';
+                originalText = state.content || '';
+                console.log('importState originalText:', originalText);
                 originalKey = state.key || '';
-
-                // Reset semitones to 0
                 semitones = 0;
                 semitoneValue.value = 0;
-
-                // Restore preferences
                 accidentalPreference = state.accidentalPreference || 'sharp';
                 modePreference = state.modePreference || 'notes';
-
-                // Update UI states for buttons
                 document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
                 document.querySelector(`input[name="mode"][value="${modePreference}"]`).checked = true;
-
-                // Update display without applying transposition
                 setInitialSelected();
-                updateTransposition(); // Since semitones = 0, this will just apply formatting
+                updateTransposition();
             };
             reader.readAsText(file);
         }
@@ -635,9 +610,7 @@
         saveBtn.addEventListener('click', saveAndExport);
         importBtn.addEventListener('click', () => importFile.click());
         importFile.addEventListener('change', importState);
-
         printBtn.addEventListener('click', printOutput);
-
         transposeMinus.addEventListener('click', () => handleTransposeClick('minus'));
         transposePlus.addEventListener('click', () => handleTransposeClick('plus'));
         resetButton.addEventListener('click', reset);
@@ -664,7 +637,6 @@
             accidentalRadios.forEach(radio => {
                 radio.parentElement.classList.toggle('selected', radio.checked);
             });
-
             const modeRadios = document.querySelectorAll('.radio-button-group input[name="mode"]');
             modeRadios.forEach(radio => {
                 radio.parentElement.classList.toggle('selected', radio.checked);
@@ -689,10 +661,9 @@
 
         setInitialSelected();
 
-        document.getElementById('inputTextArea').addEventListener('keypress', function(event) {
+        inputTextArea.addEventListener('keypress', function(event) {
             const selection = window.getSelection();
             const range = selection.getRangeAt(0);
-            
             if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
                 const parentElement = range.startContainer.parentNode;
                 if (parentElement.tagName.toLowerCase() === 'sup' || parentElement.tagName.toLowerCase() === 'sub') {
@@ -711,39 +682,13 @@
             updateTransposition();
         };
 
-        function insertTextAtCaret(text) {
-            const textArea = document.getElementById('inputTextArea');
-            textArea.focus();
-            
-            const sel = window.getSelection();
-            const range = sel.getRangeAt(0);
-            
-            if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
-                const element = range.startContainer.parentElement;
-                if (element.tagName.toLowerCase() === 'sup' || element.tagName.toLowerCase() === 'sub') {
-                    range.setStartAfter(element);
-                    range.collapse(true);
-                }
-            }
-            
-            range.deleteContents();
-            range.insertNode(document.createTextNode(text));
-            
-            range.setStartAfter(range.endContainer);
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }
-
-        document.getElementById('inputTextArea').addEventListener('keydown', function(event) {
-            // Prevent default behavior if necessary
+        inputTextArea.addEventListener('keydown', function(event) {
         });
 
-        document.getElementById('inputTextArea').addEventListener('keyup', function(event) {
+        inputTextArea.addEventListener('keyup', function(event) {
             const sel = window.getSelection();
             const range = sel.getRangeAt(0);
             const node = range.startContainer;
-
             if (node.nodeType === Node.ELEMENT_NODE) {
                 const parent = node.closest('.sup, .sub');
                 if (parent) {
@@ -756,11 +701,10 @@
             }
         });
 
-        document.getElementById('inputTextArea').addEventListener('click', function(event) {
+        inputTextArea.addEventListener('click', function(event) {
             const sel = window.getSelection();
             const range = sel.getRangeAt(0);
             const node = range.startContainer;
-
             if (node.nodeType === Node.ELEMENT_NODE) {
                 const parent = node.closest('.sup, .sub');
                 if (parent) {
@@ -768,7 +712,7 @@
                     newRange.setStartAfter(parent);
                     newRange.collapse(true);
                     sel.removeAllRanges();
-                    sel.addRange(newRange);
+                    sel.addRange(range);
                 }
             }
         });
