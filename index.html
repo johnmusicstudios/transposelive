@@ -354,7 +354,7 @@
             console.log('formatText input:', text);
             text = text.replace(/<([^>]+?)>/g, (match, content) => {
                 content = content.trim();
-                return /^[A-Za-z0-9\s]+$/.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
+                return /^[\p{L}\p{M}0-9\s]+$/u.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
             });
             console.log('formatText after green:', text);
             if (modePreference === 'chords' || !text.trim()) {
@@ -473,14 +473,29 @@
             });
             const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
             let currentText = '';
+            let lastNodeWasBlock = false;
             while (walker.nextNode()) {
                 const node = walker.currentNode;
-                if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'BR') {
-                    currentText += '\n';
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    if (node.tagName === 'BR') {
+                        currentText += '\n';
+                        lastNodeWasBlock = true;
+                    } else if (node.tagName === 'DIV') {
+                        if (!lastNodeWasBlock) {
+                            currentText += '\n';
+                        }
+                        lastNodeWasBlock = true;
+                    } else {
+                        lastNodeWasBlock = false;
+                    }
                 } else if (node.nodeType === Node.TEXT_NODE) {
                     const text = node.textContent.replace(/[^\S\n]+/g, ' ');
                     currentText += text;
+                    lastNodeWasBlock = false;
                 }
+            }
+            if (lastNodeWasBlock) {
+                currentText += '\n';
             }
             console.log('handleInputChange originalText:', currentText);
             if (semitones === 0) {
@@ -676,13 +691,61 @@
             }
         });
 
-        window.onload = () => {
-            originalText = inputTextArea.innerText;
-            originalKey = keyInput.value;
-            updateTransposition();
-        };
-
         inputTextArea.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const sel = window.getSelection();
+                const range = sel.getRangeAt(0);
+                const startContainer = range.startContainer;
+                const tableElement = startContainer.nodeType === Node.ELEMENT_NODE
+                    ? startContainer.closest('.table-cell, .table-separator')
+                    : startContainer.parentNode.closest('.table-cell, .table-separator');
+
+                if (tableElement) {
+                    // Collect all table elements in the current row
+                    let rowElements = [];
+                    let current = tableElement;
+                    // Move backward to the start of the row
+                    while (current.previousSibling && (current.previousSibling.classList?.contains('table-cell') || current.previousSibling.classList?.contains('table-separator'))) {
+                        current = current.previousSibling;
+                    }
+                    // Collect all table elements in the row
+                    while (current && (current.classList?.contains('table-cell') || current.classList?.contains('table-separator'))) {
+                        rowElements.push(current);
+                        current = current.nextSibling;
+                    }
+                    // Check if cursor is after the final separator
+                    const isLastSeparator = tableElement.classList.contains('table-separator') && rowElements.indexOf(tableElement) === rowElements.length - 1;
+                    if (isLastSeparator) {
+                        // Insert <br> after the entire row
+                        const br = document.createElement('br');
+                        tableElement.parentNode.insertBefore(br, rowElements[rowElements.length - 1].nextSibling);
+                        range.setStartAfter(br);
+                        range.setEndAfter(br);
+                    } else {
+                        // Split the row at the cursor
+                        const insertIndex = rowElements.indexOf(tableElement);
+                        const beforeSplit = rowElements.slice(0, insertIndex + (tableElement.classList.contains('table-cell') ? 1 : 0));
+                        const afterSplit = rowElements.slice(insertIndex + (tableElement.classList.contains('table-cell') ? 1 : 0));
+                        const br = document.createElement('br');
+                        tableElement.parentNode.insertBefore(br, rowElements[insertIndex].nextSibling);
+                        afterSplit.forEach(el => {
+                            tableElement.parentNode.insertBefore(el, br.nextSibling);
+                        });
+                        range.setStartAfter(br);
+                        range.setEndAfter(br);
+                    }
+                } else {
+                    range.deleteContents();
+                    const br = document.createElement('br');
+                    range.insertNode(br);
+                    range.setStartAfter(br);
+                    range.setEndAfter(br);
+                }
+                sel.removeAllRanges();
+                sel.addRange(range);
+                handleInputChange();
+            }
         });
 
         inputTextArea.addEventListener('keyup', function(event) {
@@ -716,6 +779,12 @@
                 }
             }
         });
+
+        window.onload = () => {
+            originalText = inputTextArea.innerText;
+            originalKey = keyInput.value;
+            updateTransposition();
+        };
     </script>
 </body>
 </html>
