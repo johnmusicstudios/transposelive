@@ -714,21 +714,42 @@
                         rowElements.push(current);
                         current = current.nextSibling;
                     }
-                    // Check if cursor is after the final separator
-                    const isLastSeparator = tableElement.classList.contains('table-separator') && rowElements.indexOf(tableElement) === rowElements.length - 1;
-                    if (isLastSeparator) {
-                        // Insert <br> after the entire row
+                    const elementIndex = rowElements.indexOf(tableElement);
+
+                    // Check if cursor is after a separator
+                    let isAfterSeparator = false;
+                    if (tableElement.classList.contains('table-separator')) {
+                        // Check if the cursor is at the end of the separator
+                        if (range.startOffset === tableElement.childNodes.length || range.collapsed) {
+                            isAfterSeparator = true;
+                        }
+                    }
+
+                    if (isAfterSeparator && elementIndex < rowElements.length - 1) {
+                        // Cursor is after a separator, and it's not the last separator
+                        const br = document.createElement('br');
+                        // Insert the <br> after the current separator
+                        tableElement.parentNode.insertBefore(br, tableElement.nextSibling);
+                        // Move elements after the separator to the new line
+                        const afterSplit = rowElements.slice(elementIndex + 1);
+                        afterSplit.forEach(el => {
+                            tableElement.parentNode.insertBefore(el, br.nextSibling);
+                        });
+                        range.setStartAfter(br);
+                        range.setEndAfter(br);
+                    } else if (tableElement.classList.contains('table-separator') && elementIndex === rowElements.length - 1) {
+                        // Cursor is after the final separator
                         const br = document.createElement('br');
                         tableElement.parentNode.insertBefore(br, rowElements[rowElements.length - 1].nextSibling);
                         range.setStartAfter(br);
                         range.setEndAfter(br);
                     } else {
-                        // Split the row at the cursor
-                        const insertIndex = rowElements.indexOf(tableElement);
-                        const beforeSplit = rowElements.slice(0, insertIndex + (tableElement.classList.contains('table-cell') ? 1 : 0));
-                        const afterSplit = rowElements.slice(insertIndex + (tableElement.classList.contains('table-cell') ? 1 : 0));
+                        // Cursor is within a table cell or before a separator
+                        const insertIndex = elementIndex + (tableElement.classList.contains('table-cell') ? 1 : 0);
+                        const beforeSplit = rowElements.slice(0, insertIndex);
+                        const afterSplit = rowElements.slice(insertIndex);
                         const br = document.createElement('br');
-                        tableElement.parentNode.insertBefore(br, rowElements[insertIndex].nextSibling);
+                        tableElement.parentNode.insertBefore(br, rowElements[insertIndex - 1]?.nextSibling || tableElement.nextSibling);
                         afterSplit.forEach(el => {
                             tableElement.parentNode.insertBefore(el, br.nextSibling);
                         });
@@ -736,6 +757,7 @@
                         range.setEndAfter(br);
                     }
                 } else {
+                    // Non-table content
                     range.deleteContents();
                     const br = document.createElement('br');
                     range.insertNode(br);
