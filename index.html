@@ -255,6 +255,9 @@
                 <label class="radio-button" data-mode="chords" tabindex="0" aria-label="Select chords mode">Chords
                     <input type="radio" name="mode" value="chords">
                 </label>
+                <label class="radio-button" data-mode="lyrics" tabindex="0" aria-label="Select lyrics mode">Lyrics
+                    <input type="radio" name="mode" value="lyrics">
+                </label>
             </div>
         </div>
         <div class="controls">
@@ -263,7 +266,7 @@
             <button id="transposePlus" aria-label="Transpose up one semitone">+</button>
             <button id="resetButton" aria-label="Reset transposition">Reset</button>
         </div>
-        <div id="inputTextArea" contenteditable="false" placeholder="Enter notes or chords here..." style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px;" aria-label="Input area for notes or chords" aria-live="polite"></div>
+        <div id="inputTextArea" contenteditable="false" placeholder="Enter notes, chords, or lyrics here..." style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px;" aria-label="Input area for notes, chords, or lyrics" aria-live="polite"></div>
         <div class="title-controls">
             <label for="username">Title:</label>
             <input type="text" id="username" placeholder="Enter Title" aria-label="Song title">
@@ -353,6 +356,9 @@
         }
 
         function applyColorAndDots(text) {
+            if (modePreference === 'lyrics') {
+                return text; // No formatting for lyrics
+            }
             return text.replace(
                 /([A-G])([#b]?)(['.]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
                 (match, note, accidental, sign, extension) => {
@@ -373,6 +379,12 @@
             console.log('formatText input:', text);
             if (!text.trim()) {
                 return '';
+            }
+            if (modePreference === 'lyrics') {
+                return text.replace(/<([^>]+?)>/g, (match, content) => {
+                    content = content.trim();
+                    return /^[\p{L}\p{M}0-9\s]+$/u.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
+                });
             }
             text = text.replace(/<([^>]+?)>/g, (match, content) => {
                 content = content.trim();
@@ -480,13 +492,17 @@
         }
 
         function updateTransposition() {
-            let currentText = transposeText(originalText, semitones);
-            currentText = applyAccidentalPreference(currentText);
+            let currentText = modePreference === 'lyrics' ? originalText : transposeText(originalText, semitones);
+            if (modePreference !== 'lyrics') {
+                currentText = applyAccidentalPreference(currentText);
+            }
             inputTextArea.innerHTML = '';
             inputTextArea.innerHTML = formatText(currentText);
             placeCaretAtEnd(inputTextArea);
-            let currentKey = transposeText(originalKey, semitones);
-            currentKey = applyAccidentalPreference(currentKey);
+            let currentKey = modePreference === 'lyrics' ? originalKey : transposeText(originalKey, semitones);
+            if (modePreference !== 'lyrics') {
+                currentKey = applyAccidentalPreference(currentKey);
+            }
             keyInput.value = currentKey;
         }
 
@@ -521,7 +537,7 @@
                 currentText += '\n';
             }
             console.log('handleInputChange originalText:', currentText);
-            if (semitones == 0) {
+            if (semitones === 0 || modePreference === 'lyrics') {
                 originalText = currentText;
             } else {
                 originalText = transposeText(currentText, -semitones);
@@ -552,7 +568,7 @@
 
         function handleKeyInputChange() {
             const currentKey = keyInput.value;
-            if (semitones === 0) {
+            if (semitones === 0 || modePreference === 'lyrics') {
                 originalKey = currentKey;
             } else {
                 originalKey = transposeText(currentKey, -semitones);
