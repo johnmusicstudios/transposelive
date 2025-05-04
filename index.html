@@ -375,37 +375,44 @@
                 console.warn('File System Access API not supported. Falling back to default save.');
                 return null;
             }
+
             try {
                 // Check for stored directory handle
-                if (!jmsDirHandle) {
-                    const storedHandle = await getDirectoryHandle();
-                    if (storedHandle) {
-                        // Verify permission
-                        const permission = await storedHandle.queryPermission({ mode: 'readwrite' });
-                        if (permission === 'granted') {
-                            jmsDirHandle = storedHandle;
-                        } else if (permission === 'prompt') {
-                            const granted = await storedHandle.requestPermission({ mode: 'readwrite' });
-                            if (granted === 'granted') {
-                                jmsDirHandle = storedHandle;
+                let jmsDirHandle = await getDirectoryHandle();
+
+                // If we have a stored handle, verify its validity
+                if (jmsDirHandle) {
+                    try {
+                        // Attempt to access the directory to ensure it exists
+                        await jmsDirHandle.getDirectoryHandle('CHORDS', { create: false });
+                        const permission = await jmsDirHandle.queryPermission({ mode: 'readwrite' });
+                        if (permission !== 'granted') {
+                            const granted = await jmsDirHandle.requestPermission({ mode: 'readwrite' });
+                            if (granted !== 'granted') {
+                                throw new Error('Permission denied for stored directory handle');
                             }
                         }
+                        // Directory exists and is accessible
+                    } catch (error) {
+                        console.warn('Stored directory handle is invalid or folder deleted:', error);
+                        jmsDirHandle = null; // Clear invalid handle
                     }
                 }
 
-                // Prompt for directory if no valid handle
+                // If no valid handle, prompt for a new directory
                 if (!jmsDirHandle) {
                     const baseDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
                     jmsDirHandle = await baseDirHandle.getDirectoryHandle('JMS', { create: true });
                     await saveDirectoryHandle(jmsDirHandle);
                 }
 
-                // Create or get subfolders
+                // Ensure subfolders exist
                 await Promise.all([
                     jmsDirHandle.getDirectoryHandle('CHORDS', { create: true }),
                     jmsDirHandle.getDirectoryHandle('NOTES', { create: true }),
                     jmsDirHandle.getDirectoryHandle('LYRICS', { create: true })
                 ]);
+
                 return jmsDirHandle;
             } catch (error) {
                 console.error('Error initializing JMS folder:', error);
@@ -550,7 +557,7 @@
             return result;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async () => {
             let isEditing = false;
             inputTextArea.addEventListener('click', function() {
                 if (!isEditing) {
@@ -568,7 +575,7 @@
                 }
             });
             // Initialize JMS folder on page load
-            initJmsFolder();
+            await initJmsFolder();
         });
 
         const style = document.createElement('style');
