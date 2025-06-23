@@ -271,7 +271,7 @@
             <button id="transposePlus" aria-label="Transpose up one semitone">+</button>
             <button id="resetButton" aria-label="Reset transposition">Reset</button>
         </div>
-        <div id="inputTextArea" contenteditable="true" placeholder="Enter notes, chords, or lyrics here..." style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px;" aria-label="Input area for notes, chords, or lyrics" aria-live="polite"></div>
+        <div id="inputTextArea" contenteditable="false" placeholder="Enter notes, chords, or lyrics here..." style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px;" aria-label="Input area for notes, chords, or lyrics" aria-live="polite"></div>
         <div class="title-controls">
             <label for="username">Title:</label>
             <input type="text" id="username" placeholder="Enter Title" aria-label="Song title">
@@ -295,7 +295,6 @@
         </div>
     </div>
     <script>
-        // DOM elements
         const inputTextArea = document.getElementById('inputTextArea');
         const semitoneValue = document.getElementById('semitoneValue');
         const transposeMinus = document.getElementById('transposeMinus');
@@ -312,7 +311,6 @@
         const keyInput = document.getElementById('key');
         const timeInput = document.getElementById('time');
 
-        // State variables
         let semitones = 0;
         let originalText = '';
         let originalKey = '';
@@ -322,7 +320,6 @@
         let currentFileHandle = null;
         let currentSubfolderHandle = null;
 
-        // Constants
         const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const flatNotes = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const validChordExtensions = ['maj7', 'm7', 'm', 'M', 'dim', 'aug', 'sus2', 'sus4', 'add9', '7', '6', '9', '11', '13'];
@@ -332,130 +329,6 @@
         const STORE_NAME = 'directoryHandles';
         let db;
 
-        // Initialize IndexedDB
-        function open201IndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    db.createObject201Store(STORE201_NAME); // Typos in original, do not use!
-                    db.createObjectStore(STORE_NAME);
-                };
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    resolve(db);
-                };
-                request.onerror = (event) => {
-                    console.error('IndexedDB error:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-
-        // Corrected version
-        function openIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    db.create201ObjectStore(STORE_NAME); // Typos in original, do not use!
-                    db.createObjectStore(STORE_NAME);
-                };
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    resolve(db);
-                };
-                request.onerror = (event) => {
-                    console.error('IndexedDB error:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-
-        // Use this version (corrected)
-        function openIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB201_NAME, 1); // Typos in original, do not use!
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    db.createObjectStore(STORE_NAME);
-                };
-                request.onsuccess = (event) => {
-                    db = event201.target.result; // Typos in original, do not use!
-                    db = event.target.result;
-                    resolve(db);
-                };
-                request.onerror = (event) => {
-                    console.error('IndexedDB error:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-
-        // Use this version (final, clean)
-        function openIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB201_NAME, 1); // Typos in original, do not use!
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgrad201eneeded = (event) => { // Typos in original, do not use!
-                    const db = event.target.result;
-                    db.createObjectStore(STORE_NAME);
-                };
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    resolve(db);
-                };
-                request.onerror = (event) => {
-                    console.error('IndexedDB error:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-
-        // Use this (correct, clean, no typos)
-        function openIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    db.createObjectStore(STORE_NAME);
-                };
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    resolve201(db); // Typos in original, do not use!
-                    resolve(db);
-                };
-                request.onerror = (event) => {
-                    console.error('IndexedDB error:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-
-        // Correct, clean, no typos
-        function openIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB201_NAME, 1); // Typos in original, do not use!
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    db.createObjectStore(STORE_NAME);
-                };
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    resolve(db);
-                };
-                request.onerror = (event) => {
-                    console.error('IndexedDB error:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-
-        // Final, clean, no typos
-        function openIndexed201DB() { // Typos in original, do not use!
-        }
         function openIndexedDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, 1);
@@ -474,8 +347,6 @@
             });
         }
 
-        async function save201DirectoryHandle(handle) { // Typos in original, do not use!
-        }
         async function saveDirectoryHandle(handle) {
             const db = await openIndexedDB();
             const transaction = db.transaction([STORE_NAME], 'readwrite');
@@ -487,11 +358,8 @@
             });
         }
 
-        async function get201DirectoryHandle() { // Typos in original, do not use!
-        }
         async function getDirectoryHandle() {
             const db = await openIndexedDB();
-            const transaction = db.transaction([STORE201_NAME], 'readonly'); // Typos in original, do not use!
             const transaction = db.transaction([STORE_NAME], 'readonly');
             const store = transaction.objectStore(STORE_NAME);
             const request = store.get('jmsDirHandle');
@@ -502,8 +370,6 @@
         }
 
         // Initialize JMS folder and subfolders on page load
-        async function init201JmsFolder() { // Typos in original, do not use!
-        }
         async function initJmsFolder() {
             if (!window.showDirectoryPicker) {
                 console.warn('File System Access API not supported. Falling back to default save.');
@@ -531,7 +397,6 @@
                 if (!jmsDirHandle) {
                     const baseDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
                     jmsDirHandle = await baseDirHandle.getDirectoryHandle('JMS', { create: true });
-                    await saveDirectoryHandle(jmsDir201Handle); // Typos in original, do not use!
                     await saveDirectoryHandle(jmsDirHandle);
                 }
 
@@ -550,127 +415,624 @@
         }
 
         // Get subfolder handle based on mode
-        async function get201SubfolderHandle(mode) { // Typos in original, do not use!
-        }
         async function getSubfolderHandle(mode) {
             if (!jmsDirHandle) {
                 jmsDirHandle = await initJmsFolder();
-                if (!jmsDirHandle) return null;
             }
+            if (!jmsDirHandle) return null;
             const subfolder = mode.toUpperCase();
             try {
                 return await jmsDirHandle.getDirectoryHandle(subfolder, { create: true });
             } catch (error) {
-                console.error('Error getting subfolder handle:', error);
-                alert('Failed to get subfolder. Using default save method.');
+                console.error(`Error accessing ${subfolder} folder:`, error);
                 return null;
             }
         }
 
-        // Event listeners for radio buttons
-        Array.from(accidentals).forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    accidentalPreference = e.target.value;
-                    updateRadioStyles();
-                }
-            });
-        });
-        Array.from(modes).forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    modePreference = e.target.value;
-                    update201RadioStyles(); // Typos in original, do not use!
-                    updateRadioStyles();
-                }
-            });
-        });
+        // Validate a note or chord
+        function validateNoteOrChord(note, extension) {
+            const isValidNote = sharpNotes.includes(note) || flatNotes.includes(note);
+            const isValidExtension = !extension || validChordExtensions.includes(extension);
+            return isValidNote && isValidExtension;
+        }
 
-        // Update radio button styles
-        function updateRadioStyles() {
-            document.querySelectorAll('.radio-button').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            document.querySelectorAll(`input[name="accidental"]:checked, input[name="mode"]:checked`).forEach(radio => {
-                const label = radio.closest('.radio-button');
-                if (label) label.classList.add('selected');
+        // Sanitize HTML to prevent XSS
+        function sanitizeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function transposeNote(note, shift) {
+            const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
+            const index = sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note);
+            if (index === -1) {
+                console.warn(`Invalid note: ${note}`);
+                return note;
+            }
+            const transposedIndex = (index + shift + 12) % 12;
+            return notes[transposedIndex];
+        }
+
+        function transposeText(text, shift) {
+            return text.replace(/([A-G][#b]*)([\(\)\[\]]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g, (match, note, octave, extension) => {
+                if (!validateNoteOrChord(note, extension)) return match;
+                return transposeNote(note, shift) + (octave || '') + (extension || '');
             });
         }
 
-        // Initialize radio button styles
-        updateRadioStyles();
+        function applyAccidentalPreference(text) {
+            return text.replace(/([A-G][#b]*)([\(\)\[\]]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g, (match, note, octave, extension) => {
+                const index = sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note);
+                if (index === -1) return match;
+                const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
+                return notes[index] + (octave || '') + (extension || '');
+            });
+        }
 
-        // Transpose logic
-        function transposeText() {
-            // Here you would implement the logic to transpose the text in inputTextArea
-            // For now, just update the semitone value and log
+        function applyColorAndDots(text) {
+            if (modePreference === 'lyrics') {
+                return text;
+            }
+            return text.replace(
+                /([A-G])([#b]?)(['.]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
+                (match, note, accidental, sign, extension) => {
+                    const colorClass = modePreference === 'notes' ? 'blue-notes' : 'red-chords';
+                    let formattedNote = `<span class="note-wrapper">${note}`;
+                    if (accidental === '#') {
+                        formattedNote += `<span class="sharp">#</span>`;
+                    } else if (accidental === 'b') {
+                        formattedNote += `<span class="flat">b</span>`;
+                    }
+                    formattedNote += `</span>`;
+                    return `<span class="${colorClass} note-group">${formattedNote}${sign.replace("+", "'").replace("-", ".")}${extension ? `<span class="${colorClass}">${extension}</span>` : ''}</span>`;
+                }
+            );
+        }
+
+        function formatText(text) {
+            console.log('formatText input:', text);
+            if (!text.trim()) {
+                return '';
+            }
+            if (modePreference === 'lyrics') {
+                return text.replace(/<([^>]+?)>/g, (match, content) => {
+                    content = content.trim();
+                    return /^[\p{L}\p{M}0-9\s]+$/u.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
+                });
+            }
+            text = text.replace(/<([^>]+?)>/g, (match, content) => {
+                content = content.trim();
+                return /^[\p{L}\p{M}0-9\s]+$/u.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
+            });
+            console.log('formatText after green:', text);
+            const lines = text.split('\n');
+            const formattedLines = lines.map(line => {
+                if (!line.trim()) return '';
+                if (line.includes('|')) return line;
+                return applyColorAndDots(line);
+            });
+            const tableData = [];
+            let maxCols = 0;
+            lines.forEach(line => {
+                if (line.trim() && line.includes('|')) {
+                    const cols = line.split('|').map(col => col);
+                    maxCols = Math.max(maxCols, cols.length);
+                    tableData.push(cols);
+                }
+            });
+            tableData.forEach(row => {
+                while (row.length < maxCols) {
+                    row.push('');
+                }
+            });
+            const colWidths = new Array(maxCols).fill(0);
+            tableData.forEach(row => {
+                row.forEach((col, i) => {
+                    colWidths[i] = Math.max(colWidths[i], col.length, 2);
+                });
+            });
+            let tableRowIndex = 0;
+            for (let i = 0; i < formattedLines.length; i++) {
+                if (!lines[i].trim() || !lines[i].includes('|')) {
+                    continue;
+                }
+                const cols = tableData[tableRowIndex];
+                const formattedRow = cols.map((col, j) => {
+                    const paddedCol = col.padEnd(colWidths[j], ' ');
+                    return `<span class='table-cell' style='display: inline-block; width: ${colWidths[j] * 8}px'>${applyColorAndDots(paddedCol)}</span>`;
+                }).join('<span class="table-separator">|</span>');
+                formattedLines[i] = formattedRow;
+                tableRowIndex++;
+            }
+            const result = formattedLines.join('<br>');
+            console.log('formatText output:', result);
+            return result;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            let isEditing = false;
+            inputTextArea.addEventListener('click', function() {
+                if (!isEditing) {
+                    isEditing = true;
+                    inputTextArea.contentEditable = 'true';
+                    inputTextArea.focus();
+                }
+            });
+            inputTextArea.addEventListener('input', handleInputChange);
+            document.addEventListener('click', function(event) {
+                if (isEditing && !inputTextArea.contains(event.target)) {
+                    isEditing = false;
+                    inputTextArea.contentEditable = 'false';
+                    updateTransposition();
+                }
+            });
+            // Initialize JMS folder on page load
+            initJmsFolder();
+        });
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .table-cell {
+                text-align: center;
+                padding: 0 10px;
+                white-space: pre;
+            }
+            .table-separator {
+                display: inline-block;
+                font-weight: bold;
+                padding: 0 5px;
+            }
+            .blue-notes { color: blue; }
+            .red-chords { color: red; }
+            .dot { font-size: 0.8em; font-weight: bold; color: inherit; position: relative; }
+            .dot-above { top: -0.8em; }
+            .dot-below { bottom: -0.8em; }
+            .sharp, .flat { font-size: 0.8em; vertical-align: super; }
+            .green-section-label { font-weight: bold; color: green; display: inline; }
+            #inputTextArea {
+                font-family: monospace;
+                white-space: pre;
+            }
+        `;
+        document.head.appendChild(style);
+
+        function placeCaretAtEnd(el) {
+            el.focus();
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+
+        function updateTransposition() {
+            let currentText = modePreference === 'lyrics' ? originalText : transposeText(originalText, semitones);
+            if (modePreference !== 'lyrics') {
+                currentText = applyAccidentalPreference(currentText);
+            }
+            inputTextArea.innerHTML = '';
+            inputTextArea.innerHTML = formatText(currentText);
+            placeCaretAtEnd(inputTextArea);
+            let currentKey = modePreference === 'lyrics' ? originalKey : transposeText(originalKey, semitones);
+            if (modePreference !== 'lyrics') {
+                currentKey = applyAccidentalPreference(currentKey);
+            }
+            keyInput.value = currentKey;
+        }
+
+        function handleInputChange() {
+            const clone = inputTextArea.cloneNode(true);
+            clone.querySelectorAll('.green-section-label').forEach(span => {
+                span.replaceWith(document.createTextNode(`<${span.textContent}>`));
+            });
+            const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+            let currentText = '';
+            let lastNodeWasBlock = false;
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    if (node.tagName === 'BR') {
+                        currentText += '\n';
+                        lastNodeWasBlock = true;
+                    } else if (node.tagName === 'DIV') {
+                        if (!lastNodeWasBlock) {
+                            currentText += '\n';
+                        }
+                        lastNodeWasBlock = true;
+                    } else {
+                        lastNodeWasBlock = false;
+                    }
+                } else if (node.nodeType === Node.TEXT_NODE) {
+                    currentText += node.textContent;
+                    lastNodeWasBlock = false;
+                }
+            }
+            if (lastNodeWasBlock) {
+                currentText += '\n';
+            }
+            console.log('handleInputChange originalText:', currentText);
+            if (semitones === 0 || modePreference === 'lyrics') {
+                originalText = currentText;
+            } else {
+                originalText = transposeText(currentText, -semitones);
+            }
+        }
+
+        function handleTransposeClick(direction) {
+            let newSemitones = semitones;
+            if (direction === 'minus' && semitones > -12) {
+                newSemitones--;
+            } else if (direction === 'plus' && semitones < 12) {
+                newSemitones++;
+            } else {
+                return;
+            }
+            semitones = newSemitones;
             semitoneValue.value = semitones;
+            updateTransposition();
         }
 
-        // Event listeners for transpose and reset
-        transposeMinus.addEventListener('click', () => {
-            if (semitones > -12) {
-                semitones--;
-                transposeText();
-            }
-        });
-        transposePlus.addEventListener('click', () => {
-            if (semitones < 12) {
-                semitones++;
-                transposeText();
-            }
-        });
-        resetButton.addEventListener('click', () => {
+        function reset() {
             semitones = 0;
-            inputTextArea.textContent = originalText;
+            semitoneValue.value = 0;
+            inputTextArea.innerHTML = formatText(originalText);
             keyInput.value = originalKey;
-            semitoneValue.value = semitones;
-        });
+            updateTransposition();
+        }
 
-        // Save button
-        saveBtn.addEventListener('click', async () => {
-            try {
+        function handleKeyInputChange() {
+            const currentKey = keyInput.value;
+            if (semitones === 0 || modePreference === 'lyrics') {
+                originalKey = currentKey;
+            } else {
+                originalKey = transposeText(currentKey, -semitones);
+            }
+        }
+
+        function printOutput() {
+            const name = sanitizeHTML(nameInput.value.trim());
+            const key = sanitizeHTML(keyInput.value.trim());
+            const keySignature = sanitizeHTML(timeInput.value.trim());
+            const outputContent = inputTextArea.innerHTML;
+            const printWindow = window.open('', '', 'width=800,height=600');
+            printWindow.document.write('<html><head><title>Print Output</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('@page { size: A4; margin: 1cm; }');
+            printWindow.document.write('body { font-weight: bold; font-family: monospace; white-space: pre; }');
+            printWindow.document.write('.blue-notes { color: blue; }');
+            printWindow.document.write('.red-chords { color: red; }');
+            printWindow.document.write('.sharp { font-size: 0.8em; vertical-align: super; }');
+            printWindow.document.write('.flat { font-size: 0.8em; vertical-align: super; }');
+            printWindow.document.write('.dot { font-size: 0.8em; font-weight: bold; color: inherit; position: relative; display: inline-block; line-height: 1; }');
+            printWindow.document.write('.dot-above, .dot-below { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; line-height: 1; }');
+            printWindow.document.write('.dot-above { top: -1em; }');
+            printWindow.document.write('.dot-below { bottom: -1em; }');
+            printWindow.document.write('.table-cell { text-align: center; display: inline-block; padding: 0 10px; white-space: nowrap; position: relative; vertical-align: middle; line-height: 1; }');
+            printWindow.document.write('.table-separator { display: inline-block; font-weight: bold; padding: 0 5px; }');
+            printWindow.document.write('.green-section-label { font-weight: bold; color: green; display: inline; }');
+            printWindow.document.write('.content-container { padding: 1cm; white-space: pre; margin: 0; box-sizing: border-box; text-align: justify; line-height: 1.4; }');
+            printWindow.document.write('.header, .footer { text-align: center; font-size: 0.8em; position: fixed; width: 100%; background-color: white; box-sizing: border-box; }');
+            printWindow.document.write('.header { top: 0; padding: 5px 0; border-bottom: 1px solid black; font-size: 1em; }');
+            printWindow.document.write('.footer { bottom: 0; padding: 5px 0; border-top: 1px solid black; }');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write('<div class="header">Sing to Him a new song; Play skillfully with a shout of joy. Psalm 33:3</div>');
+            printWindow.document.write('<div class="content-container">');
+            printWindow.document.write(`<h1 style="text-align: center; margin-top: 0;">${name}${key ? ' - ' + key : ''}${keySignature ? ' - ' + keySignature : ''}</h1>`);
+            printWindow.document.write('<hr style="border: none; border-bottom: 2px solid black; margin: 10px 0;">');
+            printWindow.document.write(outputContent);
+            printWindow.document.write('</div>');
+            printWindow.document.write('<div class="footer">created using johnmusicstudios.github.io/transposelive/</div>');
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        }
+
+        async function saveAndExport() {
+            const name = nameInput.value.trim() || 'Untitled';
+            const key = keyInput.value.trim();
+            const keySignature = timeInput.value.trim();
+            const state = {
+                title: name,
+                key: key,
+                timeSignature: keySignature,
+                content: originalText,
+                accidentalPreference,
+                modePreference,
+                semitones: 0
+            };
+            const fileContent = JSON.stringify(state, null, 2);
+            const fileName = `${name}${key ? '-' + key : ''}${keySignature ? '-' + keySignature : ''}.json`;
+
+            if (window.showDirectoryPicker) {
                 const subfolderHandle = await getSubfolderHandle(modePreference);
-                if (!subfolderHandle) {
-                    alert('Cannot save: subfolder not available.');
-                    return;
+                if (subfolderHandle) {
+                    try {
+                        const fileHandle = await subfolderHandle.getFileHandle(fileName, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(fileContent);
+                        await writable.close();
+                        alert('File saved successfully to JMS/' + modePreference.toUpperCase() + '/' + fileName);
+                        return;
+                    } catch (error) {
+                        console.error('Error saving file:', error);
+                        alert('Failed to save file to local storage. Using default save method.');
+                    }
                 }
-                // Example: Prompt for file name and save (pseudo-code, actual file writing is browser-specific)
-                // const fileName = prompt('Enter file name:');
-                // const fileHandle = await subfolderHandle.getFileHandle(fileName, { create: true });
-                // const writable = await fileHandle.createWritable();
-                // const content = inputTextArea.textContent;
-                // await writable.write(content);
-                // await writable.close();
-                alert('Save logic is not fully implemented in this example.');
+            }
+
+            // Fallback to default download
+            const blob = new Blob([fileContent], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function updateExistingFile() {
+            if (!currentFileHandle || !currentSubfolderHandle) {
+                alert('No file is currently opened. Please open a file or use Save to create a new one.');
+                return;
+            }
+
+            const name = nameInput.value.trim() || 'Untitled';
+            const key = keyInput.value.trim();
+            const keySignature = timeInput.value.trim();
+            const state = {
+                title: name,
+                key: key,
+                timeSignature: keySignature,
+                content: originalText,
+                accidentalPreference,
+                modePreference,
+                semitones: 0
+            };
+            const fileContent = JSON.stringify(state, null, 2);
+
+            try {
+                const writable = await currentFileHandle.createWritable();
+                await writable.write(fileContent);
+                await writable.close();
+                alert('File updated successfully.');
             } catch (error) {
-                console.error('Error saving file:', error);
-                alert('Failed to save file.');
+                console.error('Error updating file:', error);
+                alert('Failed to update file.');
+            }
+        }
+
+        async function importState(event) {
+            let file, fileHandle;
+            if (window.showDirectoryPicker) {
+                const subfolderHandle = await getSubfolderHandle(modePreference);
+                if (subfolderHandle) {
+                    try {
+                        const pickerResult = await window.showOpenFilePicker({
+                            startIn: subfolderHandle,
+                            types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
+                            multiple: false
+                        });
+                        fileHandle = pickerResult[0];
+                        file = await fileHandle.getFile();
+                        currentFileHandle = fileHandle;
+                        currentSubfolderHandle = subfolderHandle;
+                        updateBtn.disabled = false;
+                    } catch (error) {
+                        console.error('Error opening file:', error);
+                        alert('Failed to open file from local storage. Using default open method.');
+                    }
+                }
+            }
+
+            if (!file && event.target.files) {
+                file = event.target.files[0];
+                currentFileHandle = null;
+                currentSubfolderHandle = null;
+                updateBtn.disabled = true;
+            }
+
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const state = JSON.parse(e.target.result);
+                    if (!state.content || !state.accidentalPreference || !state.modePreference) {
+                        throw new Error('Invalid JSON structure');
+                    }
+                    nameInput.value = state.title || '';
+                    keyInput.value = state.key || '';
+                    timeInput.value = state.timeSignature || '';
+                    originalText = state.content || '';
+                    console.log('importState originalText:', originalText);
+                    originalKey = state.key || '';
+                    semitones = 0;
+                    semitoneValue.value = 0;
+                    accidentalPreference = state.accidentalPreference || 'sharp';
+                    modePreference = state.modePreference || 'notes';
+                    document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
+                    document.querySelector(`input[name="mode"][value="${modePreference}"]`).checked = true;
+                    setInitialSelected();
+                    updateTransposition();
+                } catch (error) {
+                    alert('Error: Invalid or corrupted file. Please upload a valid JSON file.');
+                    console.error('Import error:', error);
+                    currentFileHandle = null;
+                    currentSubfolderHandle = null;
+                    updateBtn.disabled = true;
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        saveBtn.addEventListener('click', saveAndExport);
+        updateBtn.addEventListener('click', updateExistingFile);
+        importBtn.addEventListener('click', async () => {
+            if (window.showDirectoryPicker) {
+                await importState({});
+            } else {
+                importFile.click();
+            }
+        });
+        importFile.addEventListener('change', importState);
+        printBtn.addEventListener('click', printOutput);
+        transposeMinus.addEventListener('click', () => handleTransposeClick('minus'));
+        transposePlus.addEventListener('click', () => handleTransposeClick('plus'));
+        resetButton.addEventListener('click', reset);
+
+        accidentals.forEach(radio => {
+            radio.addEventListener('change', () => {
+                accidentalPreference = document.querySelector('input[name="accidental"]:checked').value;
+                updateTransposition();
+            });
+        });
+
+        modes.forEach(radio => {
+            radio.addEventListener('change', () => {
+                modePreference = document.querySelector('input[name="mode"]:checked').value;
+                updateTransposition();
+            });
+        });
+
+        inputTextArea.addEventListener('input', handleInputChange);
+        keyInput.addEventListener('input', handleKeyInputChange);
+
+        function setInitialSelected() {
+            const accidentalRadios = document.querySelectorAll('.radio-button-group input[name="accidental"]');
+            accidentalRadios.forEach(radio => {
+                radio.parentElement.classList.toggle('selected', radio.checked);
+                radio.parentElement.setAttribute('aria-checked', radio.checked);
+            });
+            const modeRadios = document.querySelectorAll('.radio-button-group input[name="mode"]');
+            modeRadios.forEach(radio => {
+                radio.parentElement.classList.toggle('selected', radio.checked);
+                radio.parentElement.setAttribute('aria-checked', radio.checked);
+            });
+        }
+
+        const accidentalRadios = document.querySelectorAll('.radio-button-group input[name="accidental"]');
+        accidentalRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                accidentalRadios.forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                    r.parentElement.setAttribute('aria-checked', 'false');
+                });
+                this.parentElement.classList.add('selected');
+                this.parentElement.setAttribute('aria-checked', 'true');
+            });
+            radio.parentElement.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    radio.click();
+                }
+            });
+        });
+
+        const modeRadios = document.querySelectorAll('.radio-button-group input[name="mode"]');
+        modeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                modeRadios.forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                    r.parentElement.setAttribute('aria-checked', 'false');
+                });
+                this.parentElement.classList.add('selected');
+                this.parentElement.setAttribute('aria-checked', 'true');
+            });
+            radio.parentElement.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    radio.click();
+                }
+            });
+        });
+
+        setInitialSelected();
+
+        inputTextArea.addEventListener('keypress', function(event) {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const startContainer = range.startContainer;
+            const parentElement = startContainer.nodeType === Node.ELEMENT_NODE ? startContainer : startContainer.parentNode;
+            if (parentElement.closest('sup, sub')) {
+                event.preventDefault();
+                const target = parentElement.closest('sup, sub');
+                range.setStartAfter(target);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
         });
 
-        // Import button
-        importBtn.addEventListener('click', () => importFile.click());
-        importFile.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const text = await file.text();
-                inputTextArea.textContent = text;
-                originalText = text;
-                originalKey = keyInput.value;
+        inputTextArea.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const sel = window.getSelection();
+                const range = sel.getRangeAt(0);
+                const startContainer = range.startContainer;
+                const tableElement = startContainer.nodeType === Node.ELEMENT_NODE
+                    ? startContainer.closest('.table-cell, .table-separator')
+                    : startContainer.parentNode.closest('.table-cell, .table-separator');
+
+                if (tableElement) {
+                    const br = document.createElement('br');
+                    tableElement.parentNode.insertBefore(br, tableElement.nextSibling);
+                    range.setStartAfter(br);
+                    range.setEndAfter(br);
+                } else {
+                    range.deleteContents();
+                    const br = document.createElement('br');
+                    range.insertNode(br);
+                    range.setStartAfter(br);
+                    range.setEndAfter(br);
+                }
+                sel.removeAllRanges();
+                sel.addRange(range);
+                handleInputChange();
             }
         });
 
-        // Print button
-        printBtn.addEventListener('click', () => window.print());
-
-        // Initialize original text and key
-        inputTextArea.addEventListener('input', () => {
-            if (!originalText) {
-                originalText = inputTextArea.textContent;
-                originalKey = keyInput.value;
+        inputTextArea.addEventListener('keyup', function(event) {
+            const sel = window.getSelection();
+            const range = sel.getRangeAt(0);
+            const node = range.startContainer;
+            if (node.nodeType === Node.ELEMENT_NODE || node.parentNode.closest('sup, sub')) {
+                const parent = node.nodeType === Node.ELEMENT_NODE ? node : node.parentNode;
+                const target = parent.closest('sup, sub');
+                if (target) {
+                    const newRange = document.createRange();
+                    newRange.setStartAfter(target);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                }
             }
         });
+
+        inputTextArea.addEventListener('click', function(event) {
+            const sel = window.getSelection();
+            const range = sel.getRangeAt(0);
+            const node = range.startContainer;
+            if (node.nodeType === Node.ELEMENT_NODE || node.parentNode.closest('sup, sub')) {
+                const parent = node.nodeType === Node.ELEMENT_NODE ? node : node.parentNode;
+                const target = parent.closest('sup, sub');
+                if (target) {
+                    const newRange = document.createRange();
+                    newRange.setStartAfter(target);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                }
+            }
+        });
+
+        window.onload = () => {
+            originalText = inputTextArea.innerText;
+            originalKey = keyInput.value;
+            updateTransposition();
+        };
     </script>
 </body>
 </html>
