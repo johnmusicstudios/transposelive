@@ -138,6 +138,11 @@
             background-color: #2980b9;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
         .controls {
             display: flex;
             justify-content: space-between;
@@ -255,6 +260,9 @@
                 <label class="radio-button" data-mode="chords" tabindex="0" aria-label="Select chords mode">Chords
                     <input type="radio" name="mode" value="chords">
                 </label>
+                <label class="radio-button" data-mode="lyrics" tabindex="0" aria-label="Select lyrics mode">Lyrics
+                    <input type="radio" name="mode" value="lyrics">
+                </label>
             </div>
         </div>
         <div class="controls">
@@ -263,7 +271,7 @@
             <button id="transposePlus" aria-label="Transpose up one semitone">+</button>
             <button id="resetButton" aria-label="Reset transposition">Reset</button>
         </div>
-        <div id="inputTextArea" contenteditable="false" placeholder="Enter notes or chords here..." style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px;" aria-label="Input area for notes or chords" aria-live="polite"></div>
+        <div id="inputTextArea" contenteditable="false" placeholder="Enter notes, chords, or lyrics here..." style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px;" aria-label="Input area for notes, chords, or lyrics" aria-live="polite"></div>
         <div class="title-controls">
             <label for="username">Title:</label>
             <input type="text" id="username" placeholder="Enter Title" aria-label="Song title">
@@ -280,7 +288,8 @@
         </div>
         <div class="controls">
             <button id="printBtn" aria-label="Print the transposed output">Print</button>
-            <button id="saveBtn" aria-label="Save the current state">Save</button>
+            <button id="saveBtn" aria-label="Save the current state as a new file">Save</button>
+            <button id="updateBtn" aria-label="Update the current file" disabled>Update</button>
             <button id="importBtn" aria-label="Import a saved state">Open</button>
             <input type="file" id="importFile" style="display: none;" aria-label="File input for importing state">
         </div>
@@ -295,6 +304,7 @@
         const modes = document.getElementsByName('mode');
         const printBtn = document.getElementById('printBtn');
         const saveBtn = document.getElementById('saveBtn');
+        const updateBtn = document.getElementById('updateBtn');
         const importBtn = document.getElementById('importBtn');
         const importFile = document.getElementById('importFile');
         const nameInput = document.getElementById('username');
@@ -306,10 +316,118 @@
         let originalKey = '';
         let accidentalPreference = 'sharp';
         let modePreference = 'notes';
+        let jmsDirHandle = null;
+        let currentFileHandle = null;
+        let currentSubfolderHandle = null;
 
         const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const flatNotes = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const validChordExtensions = ['maj7', 'm7', 'm', 'M', 'dim', 'aug', 'sus2', 'sus4', 'add9', '7', '6', '9', '11', '13'];
+
+        // IndexedDB setup for storing directory handle
+        const DB_NAME = 'JmsTransposeLive';
+        const STORE_NAME = 'directoryHandles';
+        let db;
+
+        function openIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    db.createObjectStore(STORE_NAME);
+                };
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+                request.onerror = (event) => {
+                    console.error('IndexedDB error:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function saveDirectoryHandle(handle) {
+            const db = await openIndexedDB();
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            store.put(handle, 'jmsDirHandle');
+            return new Promise((resolve, reject) => {
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(transaction.error);
+            });
+        }
+
+        async function getDirectoryHandle() {
+            const db = await openIndexedDB();
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.get('jmsDirHandle');
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Initialize JMS folder and subfolders on page load
+        async function initJmsFolder() {
+            if (!window.showDirectoryPicker) {
+                console.warn('File System Access API not supported. Falling back to default save.');
+                return null;
+            }
+            try {
+                // Check for stored directory handle
+                if (!jmsDirHandle) {
+                    const storedHandle = await getDirectoryHandle();
+                    if (storedHandle) {
+                        // Verify permission
+                        const permission = await storedHandle.queryPermission({ mode: 'readwrite' });
+                        if (permission === 'granted') {
+                            jmsDirHandle = storedHandle;
+                        } else if (permission === 'prompt') {
+                            const granted = await storedHandle.requestPermission({ mode: 'readwrite' });
+                            if (granted === 'granted') {
+                                jmsDirHandle = storedHandle;
+                            }
+                        }
+                    }
+                }
+
+                // Prompt for directory if no valid handle
+                if (!jmsDirHandle) {
+                    const baseDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                    jmsDirHandle = await baseDirHandle.getDirectoryHandle('JMS', { create: true });
+                    await saveDirectoryHandle(jmsDirHandle);
+                }
+
+                // Create or get subfolders
+                await Promise.all([
+                    jmsDirHandle.getDirectoryHandle('CHORDS', { create: true }),
+                    jmsDirHandle.getDirectoryHandle('NOTES', { create: true }),
+                    jmsDirHandle.getDirectoryHandle('LYRICS', { create: true })
+                ]);
+                return jmsDirHandle;
+            } catch (error) {
+                console.error('Error initializing JMS folder:', error);
+                alert('Failed to set up local storage. Using default save method.');
+                return null;
+            }
+        }
+
+        // Get subfolder handle based on mode
+        async function getSubfolderHandle(mode) {
+            if (!jmsDirHandle) {
+                jmsDirHandle = await initJmsFolder();
+            }
+            if (!jmsDirHandle) return null;
+            const subfolder = mode.toUpperCase();
+            try {
+                return await jmsDirHandle.getDirectoryHandle(subfolder, { create: true });
+            } catch (error) {
+                console.error(`Error accessing ${subfolder} folder:`, error);
+                return null;
+            }
+        }
 
         // Validate a note or chord
         function validateNoteOrChord(note, extension) {
@@ -353,6 +471,9 @@
         }
 
         function applyColorAndDots(text) {
+            if (modePreference === 'lyrics') {
+                return text;
+            }
             return text.replace(
                 /([A-G])([#b]?)(['.]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
                 (match, note, accidental, sign, extension) => {
@@ -374,6 +495,12 @@
             if (!text.trim()) {
                 return '';
             }
+            if (modePreference === 'lyrics') {
+                return text.replace(/<([^>]+?)>/g, (match, content) => {
+                    content = content.trim();
+                    return /^[\p{L}\p{M}0-9\s]+$/u.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
+                });
+            }
             text = text.replace(/<([^>]+?)>/g, (match, content) => {
                 content = content.trim();
                 return /^[\p{L}\p{M}0-9\s]+$/u.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
@@ -382,7 +509,7 @@
             const lines = text.split('\n');
             const formattedLines = lines.map(line => {
                 if (!line.trim()) return '';
-                if (line.includes('|')) return line; // Defer table processing
+                if (line.includes('|')) return line;
                 return applyColorAndDots(line);
             });
             const tableData = [];
@@ -394,7 +521,6 @@
                     tableData.push(cols);
                 }
             });
-            // Normalize table rows to have equal columns
             tableData.forEach(row => {
                 while (row.length < maxCols) {
                     row.push('');
@@ -403,7 +529,7 @@
             const colWidths = new Array(maxCols).fill(0);
             tableData.forEach(row => {
                 row.forEach((col, i) => {
-                    colWidths[i] = Math.max(colWidths[i], col.length, 2); // Minimum width for short content
+                    colWidths[i] = Math.max(colWidths[i], col.length, 2);
                 });
             });
             let tableRowIndex = 0;
@@ -441,6 +567,8 @@
                     updateTransposition();
                 }
             });
+            // Initialize JMS folder on page load
+            initJmsFolder();
         });
 
         const style = document.createElement('style');
@@ -480,13 +608,17 @@
         }
 
         function updateTransposition() {
-            let currentText = transposeText(originalText, semitones);
-            currentText = applyAccidentalPreference(currentText);
+            let currentText = modePreference === 'lyrics' ? originalText : transposeText(originalText, semitones);
+            if (modePreference !== 'lyrics') {
+                currentText = applyAccidentalPreference(currentText);
+            }
             inputTextArea.innerHTML = '';
             inputTextArea.innerHTML = formatText(currentText);
             placeCaretAtEnd(inputTextArea);
-            let currentKey = transposeText(originalKey, semitones);
-            currentKey = applyAccidentalPreference(currentKey);
+            let currentKey = modePreference === 'lyrics' ? originalKey : transposeText(originalKey, semitones);
+            if (modePreference !== 'lyrics') {
+                currentKey = applyAccidentalPreference(currentKey);
+            }
             keyInput.value = currentKey;
         }
 
@@ -513,7 +645,7 @@
                         lastNodeWasBlock = false;
                     }
                 } else if (node.nodeType === Node.TEXT_NODE) {
-                    currentText += node.textContent; // Preserve exact spacing
+                    currentText += node.textContent;
                     lastNodeWasBlock = false;
                 }
             }
@@ -521,7 +653,7 @@
                 currentText += '\n';
             }
             console.log('handleInputChange originalText:', currentText);
-            if (semitones == 0) {
+            if (semitones === 0 || modePreference === 'lyrics') {
                 originalText = currentText;
             } else {
                 originalText = transposeText(currentText, -semitones);
@@ -552,7 +684,7 @@
 
         function handleKeyInputChange() {
             const currentKey = keyInput.value;
-            if (semitones === 0) {
+            if (semitones === 0 || modePreference === 'lyrics') {
                 originalKey = currentKey;
             } else {
                 originalKey = transposeText(currentKey, -semitones);
@@ -598,8 +730,8 @@
             printWindow.print();
         }
 
-        function saveAndExport() {
-            const name = nameInput.value.trim();
+        async function saveAndExport() {
+            const name = nameInput.value.trim() || 'Untitled';
             const key = keyInput.value.trim();
             const keySignature = timeInput.value.trim();
             const state = {
@@ -611,8 +743,28 @@
                 modePreference,
                 semitones: 0
             };
-            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const fileContent = JSON.stringify(state, null, 2);
             const fileName = `${name}${key ? '-' + key : ''}${keySignature ? '-' + keySignature : ''}.json`;
+
+            if (window.showDirectoryPicker) {
+                const subfolderHandle = await getSubfolderHandle(modePreference);
+                if (subfolderHandle) {
+                    try {
+                        const fileHandle = await subfolderHandle.getFileHandle(fileName, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(fileContent);
+                        await writable.close();
+                        alert('File saved successfully to JMS/' + modePreference.toUpperCase() + '/' + fileName);
+                        return;
+                    } catch (error) {
+                        console.error('Error saving file:', error);
+                        alert('Failed to save file to local storage. Using default save method.');
+                    }
+                }
+            }
+
+            // Fallback to default download
+            const blob = new Blob([fileContent], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -621,9 +773,69 @@
             URL.revokeObjectURL(url);
         }
 
-        function importState(event) {
-            const file = event.target.files[0];
+        async function updateExistingFile() {
+            if (!currentFileHandle || !currentSubfolderHandle) {
+                alert('No file is currently opened. Please open a file or use Save to create a new one.');
+                return;
+            }
+
+            const name = nameInput.value.trim() || 'Untitled';
+            const key = keyInput.value.trim();
+            const keySignature = timeInput.value.trim();
+            const state = {
+                title: name,
+                key: key,
+                timeSignature: keySignature,
+                content: originalText,
+                accidentalPreference,
+                modePreference,
+                semitones: 0
+            };
+            const fileContent = JSON.stringify(state, null, 2);
+
+            try {
+                const writable = await currentFileHandle.createWritable();
+                await writable.write(fileContent);
+                await writable.close();
+                alert('File updated successfully.');
+            } catch (error) {
+                console.error('Error updating file:', error);
+                alert('Failed to update file.');
+            }
+        }
+
+        async function importState(event) {
+            let file, fileHandle;
+            if (window.showDirectoryPicker) {
+                const subfolderHandle = await getSubfolderHandle(modePreference);
+                if (subfolderHandle) {
+                    try {
+                        const pickerResult = await window.showOpenFilePicker({
+                            startIn: subfolderHandle,
+                            types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
+                            multiple: false
+                        });
+                        fileHandle = pickerResult[0];
+                        file = await fileHandle.getFile();
+                        currentFileHandle = fileHandle;
+                        currentSubfolderHandle = subfolderHandle;
+                        updateBtn.disabled = false;
+                    } catch (error) {
+                        console.error('Error opening file:', error);
+                        alert('Failed to open file from local storage. Using default open method.');
+                    }
+                }
+            }
+
+            if (!file && event.target.files) {
+                file = event.target.files[0];
+                currentFileHandle = null;
+                currentSubfolderHandle = null;
+                updateBtn.disabled = true;
+            }
+
             if (!file) return;
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -648,13 +860,23 @@
                 } catch (error) {
                     alert('Error: Invalid or corrupted file. Please upload a valid JSON file.');
                     console.error('Import error:', error);
+                    currentFileHandle = null;
+                    currentSubfolderHandle = null;
+                    updateBtn.disabled = true;
                 }
             };
             reader.readAsText(file);
         }
 
         saveBtn.addEventListener('click', saveAndExport);
-        importBtn.addEventListener('click', () => importFile.click());
+        updateBtn.addEventListener('click', updateExistingFile);
+        importBtn.addEventListener('click', async () => {
+            if (window.showDirectoryPicker) {
+                await importState({});
+            } else {
+                importFile.click();
+            }
+        });
         importFile.addEventListener('change', importState);
         printBtn.addEventListener('click', printOutput);
         transposeMinus.addEventListener('click', () => handleTransposeClick('minus'));
