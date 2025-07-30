@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="logo.png">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>JMS Transpose Live</title>
+    <link rel="icon" type="image/png" href="logo.png" />
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,6 +47,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s ease, color 0.3s ease;
+            user-select: none;
         }
         .radio-button.selected {
             background-color: #3498db;
@@ -108,6 +109,7 @@
             vertical-align: baseline;
             font-family: Arial, sans-serif;
             line-height: 1;
+            user-select: none;
         }
         #inputTextArea:focus {
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
@@ -115,6 +117,7 @@
         label {
             font-weight: bold;
             font-size: 0.9em;
+            user-select: none;
         }
         input[type="text"], input[type="number"] {
             padding: 8px;
@@ -133,8 +136,9 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            user-select: none;
         }
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: #2980b9;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
@@ -240,50 +244,74 @@
                 width: 70px;
             }
         }
+
+        /* Additional styling */
+        .table-cell {
+            text-align: center;
+            padding: 0 10px;
+            white-space: pre;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1.2;
+        }
+        .table-separator {
+            display: inline-block;
+            font-weight: bold;
+            padding: 0 5px;
+            vertical-align: middle;
+            line-height: 1.2;
+        }
+        .green-section-label {
+            font-weight: bold;
+            color: green;
+            display: inline;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <h1>JMS Transpose Live</h1>
         <div class="accidentals-notes-chords">
-            <div class="radio-button-group">
-                <label class="radio-button" data-accidental="sharp" tabindex="0" aria-label="Select sharps notation">Sharps
-                    <input type="radio" name="accidental" value="sharp" checked>
+            <div class="radio-button-group" role="radiogroup" aria-label="Select accidental notation">
+                <label class="radio-button selected" tabindex="0" aria-checked="true" role="radio" data-accidental="sharp">Sharps
+                    <input type="radio" name="accidental" value="sharp" checked />
                 </label>
-                <label class="radio-button" data-accidental="flat" tabindex="0" aria-label="Select flats notation">Flats
-                    <input type="radio" name="accidental" value="flat">
+                <label class="radio-button" tabindex="0" aria-checked="false" role="radio" data-accidental="flat">Flats
+                    <input type="radio" name="accidental" value="flat" />
                 </label>
             </div>
-            <div class="radio-button-group">
-                <label class="radio-button" data-mode="notes" tabindex="0" aria-label="Select notes mode">Notes
-                    <input type="radio" name="mode" value="notes" checked>
+            <div class="radio-button-group" role="radiogroup" aria-label="Select mode">
+                <label class="radio-button selected" tabindex="0" aria-checked="true" role="radio" data-mode="notes">Notes
+                    <input type="radio" name="mode" value="notes" checked />
                 </label>
-                <label class="radio-button" data-mode="chords" tabindex="0" aria-label="Select chords mode">Chords
-                    <input type="radio" name="mode" value="chords">
+                <label class="radio-button" tabindex="0" aria-checked="false" role="radio" data-mode="chords">Chords
+                    <input type="radio" name="mode" value="chords" />
                 </label>
-                <label class="radio-button" data-mode="lyrics" tabindex="0" aria-label="Select lyrics mode">Lyrics
-                    <input type="radio" name="mode" value="lyrics">
+                <label class="radio-button" tabindex="0" aria-checked="false" role="radio" data-mode="lyrics">Lyrics
+                    <input type="radio" name="mode" value="lyrics" />
                 </label>
             </div>
         </div>
         <div class="controls">
             <button id="transposeMinus" aria-label="Transpose down one semitone">-</button>
-            <input type="number" id="semitoneValue" value="0" min="-12" max="12" readonly aria-label="Current semitone transposition">
+            <input type="number" id="semitoneValue" value="0" min="-12" max="12" readonly aria-label="Current semitone transposition" />
             <button id="transposePlus" aria-label="Transpose up one semitone">+</button>
             <button id="resetButton" aria-label="Reset transposition">Reset</button>
         </div>
-        <div id="inputTextArea" contenteditable="false" placeholder="Enter notes, chords, or lyrics here..." style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px;" aria-label="Input area for notes, chords, or lyrics" aria-live="polite"></div>
+        <div id="inputTextArea" contenteditable="true" placeholder="Enter notes, chords, or lyrics here..." aria-label="Input area for notes, chords, or lyrics" style="font-family: monospace; white-space: pre; border: 1px solid black; padding: 10px; width: 100%; height: 300px; overflow-y: auto;"></div>
         <div class="title-controls">
             <label for="username">Title:</label>
-            <input type="text" id="username" placeholder="Enter Title" aria-label="Song title">
+            <input type="text" id="username" placeholder="Enter Title" aria-label="Song title" />
         </div>
         <div class="print-controls">
             <div>
                 <label for="key">Key:</label>
-                <input type="text" id="key" placeholder="Enter Key" aria-label="Song key">
+                <input type="text" id="key" placeholder="Enter Key" aria-label="Song key" />
             </div>
             <div>
                 <label for="time">Time:</label>
-                <input type="text" id="time" placeholder="Enter Time Signature" aria-label="Time signature">
+                <input type="text" id="time" placeholder="Enter Time Signature" aria-label="Time signature" />
             </div>
         </div>
         <div class="controls">
@@ -291,10 +319,12 @@
             <button id="saveBtn" aria-label="Save the current state as a new file">Save</button>
             <button id="updateBtn" aria-label="Update the current file" disabled>Update</button>
             <button id="importBtn" aria-label="Import a saved state">Open</button>
-            <input type="file" id="importFile" style="display: none;" aria-label="File input for importing state">
+            <input type="file" id="importFile" style="display: none;" aria-label="File input for importing state" accept=".json" />
         </div>
     </div>
+
     <script>
+        // Variables and constants
         const inputTextArea = document.getElementById('inputTextArea');
         const semitoneValue = document.getElementById('semitoneValue');
         const transposeMinus = document.getElementById('transposeMinus');
@@ -491,7 +521,6 @@
         }
 
         function formatText(text) {
-            console.log('formatText input:', text);
             if (!text.trim()) {
                 return '';
             }
@@ -505,7 +534,6 @@
                 content = content.trim();
                 return /^[\p{L}\p{M}0-9\s]+$/u.test(content) && content ? `<span contenteditable="false" class="green-section-label">${content}</span>` : match;
             });
-            console.log('formatText after green:', text);
             const lines = text.split('\n');
             const formattedLines = lines.map(line => {
                 if (!line.trim()) return '';
@@ -546,57 +574,10 @@
                 tableRowIndex++;
             }
             const result = formattedLines.join('<br>');
-            console.log('formatText output:', result);
             return result;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            let isEditing = false;
-            inputTextArea.addEventListener('click', function() {
-                if (!isEditing) {
-                    isEditing = true;
-                    inputTextArea.contentEditable = 'true';
-                    inputTextArea.focus();
-                }
-            });
-            inputTextArea.addEventListener('input', handleInputChange);
-            document.addEventListener('click', function(event) {
-                if (isEditing && !inputTextArea.contains(event.target)) {
-                    isEditing = false;
-                    inputTextArea.contentEditable = 'false';
-                    updateTransposition();
-                }
-            });
-            // Initialize JMS folder on page load
-            initJmsFolder();
-        });
-
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .table-cell {
-                text-align: center;
-                padding: 0 10px;
-                white-space: pre;
-            }
-            .table-separator {
-                display: inline-block;
-                font-weight: bold;
-                padding: 0 5px;
-            }
-            .blue-notes { color: blue; }
-            .red-chords { color: red; }
-            .dot { font-size: 0.8em; font-weight: bold; color: inherit; position: relative; }
-            .dot-above { top: -0.8em; }
-            .dot-below { bottom: -0.8em; }
-            .sharp, .flat { font-size: 0.8em; vertical-align: super; }
-            .green-section-label { font-weight: bold; color: green; display: inline; }
-            #inputTextArea {
-                font-family: monospace;
-                white-space: pre;
-            }
-        `;
-        document.head.appendChild(style);
-
+        // Move caret to end
         function placeCaretAtEnd(el) {
             el.focus();
             const range = document.createRange();
@@ -607,6 +588,7 @@
             sel.addRange(range);
         }
 
+        // Updates the transposition display and key
         function updateTransposition() {
             let currentText = modePreference === 'lyrics' ? originalText : transposeText(originalText, semitones);
             if (modePreference !== 'lyrics') {
@@ -615,6 +597,7 @@
             inputTextArea.innerHTML = '';
             inputTextArea.innerHTML = formatText(currentText);
             placeCaretAtEnd(inputTextArea);
+
             let currentKey = modePreference === 'lyrics' ? originalKey : transposeText(originalKey, semitones);
             if (modePreference !== 'lyrics') {
                 currentKey = applyAccidentalPreference(currentKey);
@@ -622,6 +605,7 @@
             keyInput.value = currentKey;
         }
 
+        // Parse inputTextArea content to plain text (remove formatting spans)
         function handleInputChange() {
             const clone = inputTextArea.cloneNode(true);
             clone.querySelectorAll('.green-section-label').forEach(span => {
@@ -652,14 +636,25 @@
             if (lastNodeWasBlock) {
                 currentText += '\n';
             }
-            console.log('handleInputChange originalText:', currentText);
+
             if (semitones === 0 || modePreference === 'lyrics') {
                 originalText = currentText;
             } else {
+                // Undo transposition to store original (untransposed) text
                 originalText = transposeText(currentText, -semitones);
             }
         }
 
+        // Debounce input handler for performance
+        let inputChangeTimeout;
+        function handleInputChangeDebounced() {
+            clearTimeout(inputChangeTimeout);
+            inputChangeTimeout = setTimeout(() => {
+                handleInputChange();
+            }, 300);
+        }
+
+        // Transpose button handlers
         function handleTransposeClick(direction) {
             let newSemitones = semitones;
             if (direction === 'minus' && semitones > -12) {
@@ -674,6 +669,7 @@
             updateTransposition();
         }
 
+        // Reset button handler
         function reset() {
             semitones = 0;
             semitoneValue.value = 0;
@@ -682,6 +678,7 @@
             updateTransposition();
         }
 
+        // Key input change handler
         function handleKeyInputChange() {
             const currentKey = keyInput.value;
             if (semitones === 0 || modePreference === 'lyrics') {
@@ -691,6 +688,7 @@
             }
         }
 
+        // Print functionality
         function printOutput() {
             const name = sanitizeHTML(nameInput.value.trim());
             const key = sanitizeHTML(keyInput.value.trim());
@@ -730,6 +728,7 @@
             printWindow.print();
         }
 
+        // Save new file or overwrite existing - saveAndExport with handle update
         async function saveAndExport() {
             const name = nameInput.value.trim() || 'Untitled';
             const key = keyInput.value.trim();
@@ -754,6 +753,9 @@
                         const writable = await fileHandle.createWritable();
                         await writable.write(fileContent);
                         await writable.close();
+                        currentFileHandle = fileHandle;          // Update the current file handle
+                        currentSubfolderHandle = subfolderHandle;
+                        updateBtn.disabled = false;               // Enable update button
                         alert('File saved successfully to JMS/' + modePreference.toUpperCase() + '/' + fileName);
                         return;
                     } catch (error) {
@@ -763,7 +765,7 @@
                 }
             }
 
-            // Fallback to default download
+            // Fallback: default download, no persistent handle available
             const blob = new Blob([fileContent], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -771,8 +773,12 @@
             a.download = fileName;
             a.click();
             URL.revokeObjectURL(url);
+            currentFileHandle = null;
+            currentSubfolderHandle = null;
+            updateBtn.disabled = true;
         }
 
+        // Update the currently opened file with new content
         async function updateExistingFile() {
             if (!currentFileHandle || !currentSubfolderHandle) {
                 alert('No file is currently opened. Please open a file or use Save to create a new one.');
@@ -804,30 +810,34 @@
             }
         }
 
+        // Import file and restore state
         async function importState(event) {
-            let file, fileHandle;
+            let file = null, fileHandle = null;
+
             if (window.showDirectoryPicker) {
-                const subfolderHandle = await getSubfolderHandle(modePreference);
-                if (subfolderHandle) {
-                    try {
-                        const pickerResult = await window.showOpenFilePicker({
-                            startIn: subfolderHandle,
-                            types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
-                            multiple: false
-                        });
-                        fileHandle = pickerResult[0];
-                        file = await fileHandle.getFile();
-                        currentFileHandle = fileHandle;
-                        currentSubfolderHandle = subfolderHandle;
-                        updateBtn.disabled = false;
-                    } catch (error) {
-                        console.error('Error opening file:', error);
-                        alert('Failed to open file from local storage. Using default open method.');
+                try {
+                    const subfolderHandle = await getSubfolderHandle(modePreference);
+                    if (subfolderHandle) {
+                        if (!event || !event.target || !event.target.files) {
+                            const pickerResult = await window.showOpenFilePicker({
+                                startIn: subfolderHandle,
+                                types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
+                                multiple: false
+                            });
+                            fileHandle = pickerResult[0];
+                            file = await fileHandle.getFile();
+                            currentFileHandle = fileHandle;
+                            currentSubfolderHandle = subfolderHandle;
+                            updateBtn.disabled = false;
+                        }
                     }
+                } catch (error) {
+                    console.error('Error opening file:', error);
+                    alert('Failed to open file from local storage. Using default open method.');
                 }
             }
 
-            if (!file && event.target.files) {
+            if (!file && event && event.target && event.target.files) {
                 file = event.target.files[0];
                 currentFileHandle = null;
                 currentSubfolderHandle = null;
@@ -843,19 +853,21 @@
                     if (!state.content || !state.accidentalPreference || !state.modePreference) {
                         throw new Error('Invalid JSON structure');
                     }
+
                     nameInput.value = state.title || '';
                     keyInput.value = state.key || '';
                     timeInput.value = state.timeSignature || '';
                     originalText = state.content || '';
-                    console.log('importState originalText:', originalText);
                     originalKey = state.key || '';
                     semitones = 0;
                     semitoneValue.value = 0;
                     accidentalPreference = state.accidentalPreference || 'sharp';
                     modePreference = state.modePreference || 'notes';
+
                     document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
                     document.querySelector(`input[name="mode"][value="${modePreference}"]`).checked = true;
                     setInitialSelected();
+
                     updateTransposition();
                 } catch (error) {
                     alert('Error: Invalid or corrupted file. Please upload a valid JSON file.');
@@ -868,24 +880,27 @@
             reader.readAsText(file);
         }
 
-        saveBtn.addEventListener('click', saveAndExport);
-        updateBtn.addEventListener('click', updateExistingFile);
-        importBtn.addEventListener('click', async () => {
-            if (window.showDirectoryPicker) {
-                await importState({});
-            } else {
-                importFile.click();
-            }
-        });
-        importFile.addEventListener('change', importState);
-        printBtn.addEventListener('click', printOutput);
-        transposeMinus.addEventListener('click', () => handleTransposeClick('minus'));
-        transposePlus.addEventListener('click', () => handleTransposeClick('plus'));
-        resetButton.addEventListener('click', reset);
+        // Set the visual selected state of radio buttons
+        function setInitialSelected() {
+            const accidentalRadios = document.querySelectorAll('.radio-button-group input[name="accidental"]');
+            accidentalRadios.forEach(radio => {
+                radio.parentElement.classList.toggle('selected', radio.checked);
+                radio.parentElement.setAttribute('aria-checked', radio.checked.toString());
+            });
+            const modeRadios = document.querySelectorAll('.radio-button-group input[name="mode"]');
+            modeRadios.forEach(radio => {
+                radio.parentElement.classList.toggle('selected', radio.checked);
+                radio.parentElement.setAttribute('aria-checked', radio.checked.toString());
+            });
+        }
 
+        // Disable update button and clear current file handles on mode or accidental change
         accidentals.forEach(radio => {
             radio.addEventListener('change', () => {
                 accidentalPreference = document.querySelector('input[name="accidental"]:checked').value;
+                currentFileHandle = null;
+                currentSubfolderHandle = null;
+                updateBtn.disabled = true;
                 updateTransposition();
             });
         });
@@ -893,26 +908,14 @@
         modes.forEach(radio => {
             radio.addEventListener('change', () => {
                 modePreference = document.querySelector('input[name="mode"]:checked').value;
+                currentFileHandle = null;
+                currentSubfolderHandle = null;
+                updateBtn.disabled = true;
                 updateTransposition();
             });
         });
 
-        inputTextArea.addEventListener('input', handleInputChange);
-        keyInput.addEventListener('input', handleKeyInputChange);
-
-        function setInitialSelected() {
-            const accidentalRadios = document.querySelectorAll('.radio-button-group input[name="accidental"]');
-            accidentalRadios.forEach(radio => {
-                radio.parentElement.classList.toggle('selected', radio.checked);
-                radio.parentElement.setAttribute('aria-checked', radio.checked);
-            });
-            const modeRadios = document.querySelectorAll('.radio-button-group input[name="mode"]');
-            modeRadios.forEach(radio => {
-                radio.parentElement.classList.toggle('selected', radio.checked);
-                radio.parentElement.setAttribute('aria-checked', radio.checked);
-            });
-        }
-
+        // Keyboard accessibility for radio buttons
         const accidentalRadios = document.querySelectorAll('.radio-button-group input[name="accidental"]');
         accidentalRadios.forEach(radio => {
             radio.addEventListener('change', function() {
@@ -949,8 +952,7 @@
             });
         });
 
-        setInitialSelected();
-
+        // Caret and key press management in input area - simplified and improved
         inputTextArea.addEventListener('keypress', function(event) {
             const selection = window.getSelection();
             const range = selection.getRangeAt(0);
@@ -971,10 +973,13 @@
                 event.preventDefault();
                 const sel = window.getSelection();
                 const range = sel.getRangeAt(0);
+                let tableElement;
                 const startContainer = range.startContainer;
-                const tableElement = startContainer.nodeType === Node.ELEMENT_NODE
-                    ? startContainer.closest('.table-cell, .table-separator')
-                    : startContainer.parentNode.closest('.table-cell, .table-separator');
+                if (startContainer.nodeType === Node.ELEMENT_NODE) {
+                    tableElement = startContainer.closest('.table-cell, .table-separator');
+                } else {
+                    tableElement = startContainer.parentNode.closest('.table-cell, .table-separator');
+                }
 
                 if (tableElement) {
                     const br = document.createElement('br');
@@ -994,45 +999,57 @@
             }
         });
 
-        inputTextArea.addEventListener('keyup', function(event) {
+        // Simplified caret repositioning on keyup and click inside a sup/sub to prevent cursor inside
+        function fixCaretAfterSupSub() {
             const sel = window.getSelection();
+            if (!sel.rangeCount) return;
             const range = sel.getRangeAt(0);
             const node = range.startContainer;
-            if (node.nodeType === Node.ELEMENT_NODE || node.parentNode.closest('sup, sub')) {
-                const parent = node.nodeType === Node.ELEMENT_NODE ? node : node.parentNode;
-                const target = parent.closest('sup, sub');
-                if (target) {
-                    const newRange = document.createRange();
-                    newRange.setStartAfter(target);
-                    newRange.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
-                }
+            const parent = node.nodeType === Node.ELEMENT_NODE ? node : node.parentNode;
+            const target = parent.closest('sup, sub');
+            if (target) {
+                const newRange = document.createRange();
+                newRange.setStartAfter(target);
+                newRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+            }
+        }
+
+        inputTextArea.addEventListener('keyup', fixCaretAfterSupSub);
+        inputTextArea.addEventListener('click', fixCaretAfterSupSub);
+
+        // Event Listener wiring
+        transposeMinus.addEventListener('click', () => handleTransposeClick('minus'));
+        transposePlus.addEventListener('click', () => handleTransposeClick('plus'));
+        resetButton.addEventListener('click', reset);
+
+        inputTextArea.addEventListener('input', handleInputChangeDebounced);
+        keyInput.addEventListener('input', handleKeyInputChange);
+
+        saveBtn.addEventListener('click', saveAndExport);
+        updateBtn.addEventListener('click', updateExistingFile);
+        importBtn.addEventListener('click', async () => {
+            if (window.showDirectoryPicker) {
+                await importState({});
+            } else {
+                importFile.click();
             }
         });
+        importFile.addEventListener('change', importState);
 
-        inputTextArea.addEventListener('click', function(event) {
-            const sel = window.getSelection();
-            const range = sel.getRangeAt(0);
-            const node = range.startContainer;
-            if (node.nodeType === Node.ELEMENT_NODE || node.parentNode.closest('sup, sub')) {
-                const parent = node.nodeType === Node.ELEMENT_NODE ? node : node.parentNode;
-                const target = parent.closest('sup, sub');
-                if (target) {
-                    const newRange = document.createRange();
-                    newRange.setStartAfter(target);
-                    newRange.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
-                }
-            }
-        });
+        // Initialize visual selection of radio buttons on page load
+        setInitialSelected();
 
-        window.onload = () => {
+        // Initialize JMS folder; and initialize original values on page load
+        window.onload = async () => {
+            await initJmsFolder();
             originalText = inputTextArea.innerText;
             originalKey = keyInput.value;
             updateTransposition();
+            setInitialSelected();
         };
     </script>
+
 </body>
 </html>
