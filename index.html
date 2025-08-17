@@ -110,32 +110,13 @@
             color: #777;
             cursor: not-allowed;
         }
-        .blue-notes {color: #1e90ff;}
-        .red-chords {color: #e74c3c;}
+        .blue-notes { color: #1e90ff; }
+        .red-chords { color: #e74c3c; }
         .sharp, .flat {font-size: 0.8em;vertical-align: super;}
         .print-controls, .title-controls {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-        }
-        .green-section-label {
-            font-weight: bold;
-            color: green;
-        }
-        /* Table styling for alignment */
-        .table-align {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-        }
-        .table-align td {
-            border: 1px solid #ddd;
-            padding: 6px 2px;
-            word-break: break-word;
-            vertical-align: middle;
-            font-size: 1em;
-            background: #fff;
         }
         @media (max-width: 480px) {
             .container {padding: 2px;}
@@ -143,7 +124,29 @@
             .radio-button {font-size: 0.8em; padding: 5px;}
             #inputTextArea {min-height: 120px; font-size: 1em;}
             .controls {flex-direction: row;}
-            .table-align td {font-size: 0.9em; padding: 4px 2px;}
+        }
+        /* Updated table styling for nowrap and alignment */
+        .table-container {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+            overflow-x: auto;
+        }
+        .table-row {
+            display: table-row;
+            border-bottom: 1px solid #ddd;
+        }
+        .table-cell {
+            display: table-cell;
+            padding: 4px 8px;
+            white-space: nowrap; /* prevent wrapping */
+            vertical-align: middle;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        .green-section-label {
+            font-weight: bold;
+            color: green;
         }
     </style>
 </head>
@@ -193,18 +196,18 @@
     <script>
         // ------------ Data & State ---------------
         const inputTextArea = document.getElementById('inputTextArea');
-        const semitoneValue  = document.getElementById('semitoneValue');
+        const semitoneValue = document.getElementById('semitoneValue');
         const transposeMinus = document.getElementById('transposeMinus');
-        const transposePlus  = document.getElementById('transposePlus');
-        const resetButton    = document.getElementById('resetButton');
-        const printBtn       = document.getElementById('printBtn');
-        const saveBtn        = document.getElementById('saveBtn');
-        const updateBtn      = document.getElementById('updateBtn');
-        const importBtn      = document.getElementById('importBtn');
-        const importFile     = document.getElementById('importFile');
-        const nameInput      = document.getElementById('username');
-        const keyInput       = document.getElementById('key');
-        const timeInput      = document.getElementById('time');
+        const transposePlus = document.getElementById('transposePlus');
+        const resetButton = document.getElementById('resetButton');
+        const printBtn = document.getElementById('printBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const updateBtn = document.getElementById('updateBtn');
+        const importBtn = document.getElementById('importBtn');
+        const importFile = document.getElementById('importFile');
+        const nameInput = document.getElementById('username');
+        const keyInput = document.getElementById('key');
+        const timeInput = document.getElementById('time');
         let semitones = 0, originalText = '', originalKey = '';
         let accidentalPreference = 'sharp', modePreference = 'notes';
         let jmsDirHandle = null, currentFileHandle = null, currentSubfolderHandle = null;
@@ -212,7 +215,7 @@
         const flatNotes  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
         const validChordExtensions = ['maj7','m7','m','M','dim','aug','sus2','sus4','add9','7','6','9','11','13'];
 
-        // Permissions and storage (File System Access API)
+        // IndexedDB setup & File System Access API
         const DB_NAME = 'JmsTransposeLive', STORE_NAME = 'directoryHandles';
         let db;
         function openIndexedDB() {
@@ -242,7 +245,6 @@
                 request.onerror = () => reject(request.error);
             });
         }
-        // Initialize JMS folder & subfolders ONLY ONCE
         async function initJmsFolder() {
             if (!window.showDirectoryPicker) return null;
             try {
@@ -277,7 +279,7 @@
             try { return await jmsDirHandle.getDirectoryHandle(mode.toUpperCase(), {create:true}); }
             catch(e) { return null; }
         }
-        // ----- Transpose Logic -----
+        // -- Notes & chords transposition --
         function noteIndex(note) {
             let i = sharpNotes.indexOf(note);
             return i >= 0 ? i : flatNotes.indexOf(note);
@@ -292,7 +294,6 @@
             return (sharpNotes.includes(note) || flatNotes.includes(note)) && (!ext || validChordExtensions.includes(ext));
         }
         function transposeText(text, shift) {
-            // Detect chords and notes (A-G, with #/b)
             return text.replace(/([A-G])([#b]?)(?:([\d'])?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
                 (m,n,a,o,ext) => validateNoteOrChord(n+(a||''),ext) ?
                     transposeNote(n+(a||''),shift)+(o?o:'')+(ext?ext:'') : m);
@@ -306,7 +307,7 @@
                     return notes[idx]+(o?o:'')+(ext?ext:'');
                 });
         }
-        // -------------- Formatting Logic with HTML table --------------
+        // -- Formatting & coloring --
         function applyColorAndDots(text) {
             if (modePreference === 'lyrics') return text;
             return text.replace(/([A-G])([#b]?)([\d']?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
@@ -321,41 +322,50 @@
         }
         function formatText(text) {
             if (!text.trim()) return '';
+
             // Green headings: <Some Heading>
             text = text.replace(/<([^>]+?)>/g, (match, c) => {
                 c = c.trim();
                 return c ? `<span class="green-section-label">${c}</span>` : match;
             });
 
-            // Table code for '|' alignment, with real table
             const lines = text.split('\n');
-            let result = '';
-            let tableBuffer = [];
+            let tableRows = [];
             let maxCols = 0;
-            function flushTable() {
-                if (tableBuffer.length > 0) {
-                    result += '<table class="table-align"><tbody>';
-                    tableBuffer.forEach(row => {
-                        result += '<tr>' + row.map(c=>`<td>${applyColorAndDots(c)}</td>`).join('') + '</tr>';
-                    });
-                    result += '</tbody></table>';
-                    tableBuffer = []; maxCols = 0;
-                }
-            }
+
             lines.forEach(line => {
                 if (line.includes('|')) {
-                    let cols = line.split('|').map(x=>x.trim());
-                    maxCols = Math.max(maxCols, cols.length);
-                    tableBuffer.push(cols);
+                    const cols = line.split('|').map(col => col.trim());
+                    if (cols.length > maxCols) maxCols = cols.length;
+                    tableRows.push(cols);
                 } else {
-                    flushTable();
-                    result += `<div>${applyColorAndDots(line)}</div>`;
+                    tableRows.push(null);
                 }
             });
-            flushTable();
-            return result;
-        }
 
+            // Build HTML string with table structure
+            let html = '<div class="table-container">';
+            tableRows.forEach((row, idx) => {
+                if (row) {
+                    html += '<div class="table-row">';
+                    row.forEach(col => {
+                        html += `<span class="table-cell">${applyColorAndDots(col)}</span>`;
+                    });
+                    // Fill empty cells if any
+                    for (let i = row.length; i < maxCols; i++) {
+                        html += `<span class="table-cell">&nbsp;</span>`;
+                    }
+                    html += '</div>';
+                } else {
+                    // Plain line without pipe - preserve original line text
+                    html += `<div style="white-space: pre-wrap;">${applyColorAndDots(lines[idx])}</div>`;
+                }
+            });
+            html += '</div>';
+
+            return html;
+        }
+        // -- Transposition update --
         function updateTransposition() {
             let t = modePreference === 'lyrics' ? originalText : transposeText(originalText, semitones);
             if (modePreference !== 'lyrics') t = applyAccidentalPreference(t);
@@ -364,8 +374,7 @@
             if (modePreference !== 'lyrics') currentKey = applyAccidentalPreference(currentKey);
             keyInput.value = currentKey;
         }
-
-        // Convert contenteditable to plain text
+        // Convert contenteditable to plain text for storage
         function handleInputChange() {
             let clone = inputTextArea.cloneNode(true);
             clone.querySelectorAll('.green-section-label').forEach(span => {
@@ -392,7 +401,7 @@
             clearTimeout(inputChangeTimeout);
             inputChangeTimeout = setTimeout(handleInputChange, 250);
         }
-        // ----- Button Handlers -----
+        // Button Handlers
         function handleTransposeClick(dir) {
             let st = semitones;
             if (dir === 'minus' && st > -12) st--;
@@ -413,7 +422,7 @@
             if (semitones === 0 || modePreference === 'lyrics') originalKey = key;
             else originalKey = transposeText(key, -semitones);
         }
-        // ---- Persistence ----
+        // Persistence functions
         async function saveAndExport() {
             const name = nameInput.value.trim() || 'Untitled';
             const key = keyInput.value.trim();
@@ -513,7 +522,7 @@
                 r.parentElement.classList.toggle('selected',r.checked);
             });
         }
-        // UI Handlers
+        // UI Listeners
         document.querySelectorAll('input[name="accidental"]').forEach(radio=>
             radio.addEventListener('change',()=>{
                 accidentalPreference = document.querySelector('input[name="accidental"]:checked').value;
@@ -542,7 +551,7 @@
         });
         importFile && importFile.addEventListener('change',importState);
 
-        // ---------- Print output -----------
+        // Print output
         function printOutput() {
             const name = nameInput.value.trim(), key = keyInput.value.trim(), time = timeInput.value.trim();
             const outputContent = inputTextArea.innerHTML;
@@ -551,8 +560,9 @@
             printWindow.document.write('@page{size:A4;margin:1cm;}body{font-family:monospace;font-weight:bold;white-space:pre;}');
             printWindow.document.write('.blue-notes{color:blue;} .red-chords{color:red;} .sharp,.flat{font-size:0.8em;vertical-align:super;}');
             printWindow.document.write('.green-section-label{font-weight:bold;color:green;}');
-            printWindow.document.write('.table-align{width:100%;table-layout:fixed;border-collapse:collapse;}');
-            printWindow.document.write('.table-align td{border:1px solid #ddd;padding:6px 2px;word-break:break-word;vertical-align:middle;font-size:1em;}');
+            printWindow.document.write('.table-container{display:table;width:100%;border-collapse:collapse;}');
+            printWindow.document.write('.table-row{display:table-row;border-bottom:1px solid #ddd;}');
+            printWindow.document.write('.table-cell{display:table-cell;padding:4px 8px;white-space:nowrap;vertical-align:middle;border:1px solid #ddd;}');
             printWindow.document.write('</style></head><body>');
             printWindow.document.write(`<h1 style="text-align:center;">${name}${key?' - '+key:''}${time?' - '+time:''}</h1><hr>`);
             printWindow.document.write(outputContent);
@@ -562,7 +572,7 @@
         }
         printBtn.addEventListener('click',printOutput);
 
-        // On first page load -- storage permission and UI setup
+        // Startup
         window.onload = async () => {
             await initJmsFolder();
             originalText = inputTextArea.innerText || '';
