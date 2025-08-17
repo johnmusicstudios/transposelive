@@ -110,13 +110,32 @@
             color: #777;
             cursor: not-allowed;
         }
-        .blue-notes { color: #1e90ff; }
-        .red-chords { color: #e74c3c; }
+        .blue-notes {color: #1e90ff;}
+        .red-chords {color: #e74c3c;}
         .sharp, .flat {font-size: 0.8em;vertical-align: super;}
         .print-controls, .title-controls {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+        }
+        .green-section-label {
+            font-weight: bold;
+            color: green;
+        }
+        /* Table styling for alignment */
+        .table-align {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        .table-align td {
+            border: 1px solid #ddd;
+            padding: 6px 2px;
+            word-break: break-word;
+            vertical-align: middle;
+            font-size: 1em;
+            background: #fff;
         }
         @media (max-width: 480px) {
             .container {padding: 2px;}
@@ -124,25 +143,7 @@
             .radio-button {font-size: 0.8em; padding: 5px;}
             #inputTextArea {min-height: 120px; font-size: 1em;}
             .controls {flex-direction: row;}
-        }
-        /* Table styling for alignment */
-        .table-row {
-            display: grid;
-            grid-template-columns: repeat(var(--colnum), 1fr);
-            gap: 0;
-            border-bottom: 1px solid #ddd;
-        }
-        .table-cell {
-            text-align: center;
-            padding: 4px 2px;
-            white-space: pre-wrap;
-            box-sizing: border-box;
-            border-right: 1px solid #ddd;
-        }
-        .table-cell:last-child {border-right: none;}
-        .green-section-label {
-            font-weight: bold;
-            color: green;
+            .table-align td {font-size: 0.9em; padding: 4px 2px;}
         }
     </style>
 </head>
@@ -191,7 +192,7 @@
     </div>
     <script>
         // ------------ Data & State ---------------
-        const inputTextArea   = document.getElementById('inputTextArea');
+        const inputTextArea = document.getElementById('inputTextArea');
         const semitoneValue  = document.getElementById('semitoneValue');
         const transposeMinus = document.getElementById('transposeMinus');
         const transposePlus  = document.getElementById('transposePlus');
@@ -305,7 +306,7 @@
                     return notes[idx]+(o?o:'')+(ext?ext:'');
                 });
         }
-        // -------------- Formatting Logic --------------
+        // -------------- Formatting Logic with HTML table --------------
         function applyColorAndDots(text) {
             if (modePreference === 'lyrics') return text;
             return text.replace(/([A-G])([#b]?)([\d']?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
@@ -326,30 +327,32 @@
                 return c ? `<span class="green-section-label">${c}</span>` : match;
             });
 
-            // Table code for | alignment
+            // Table code for '|' alignment, with real table
+            const lines = text.split('\n');
             let result = '';
-            let lines = text.split('\n');
-            let parsedTableRows = []; let tableCols = 0;
+            let tableBuffer = [];
+            let maxCols = 0;
+            function flushTable() {
+                if (tableBuffer.length > 0) {
+                    result += '<table class="table-align"><tbody>';
+                    tableBuffer.forEach(row => {
+                        result += '<tr>' + row.map(c=>`<td>${applyColorAndDots(c)}</td>`).join('') + '</tr>';
+                    });
+                    result += '</tbody></table>';
+                    tableBuffer = []; maxCols = 0;
+                }
+            }
             lines.forEach(line => {
                 if (line.includes('|')) {
                     let cols = line.split('|').map(x=>x.trim());
-                    if (cols.length > tableCols) tableCols = cols.length;
-                    parsedTableRows.push(cols);
+                    maxCols = Math.max(maxCols, cols.length);
+                    tableBuffer.push(cols);
                 } else {
-                    parsedTableRows.push(false);
-                }
-            });
-
-            let lineIdx = 0;
-            lines.forEach((line,idx) => {
-                if (parsedTableRows[idx]) {
-                    result += `<div class="table-row" style="--colnum:${tableCols}">` +
-                        parsedTableRows[idx].map(c => `<span class="table-cell">${applyColorAndDots(c)}</span>`).join('') +
-                        `</div>`;
-                } else {
+                    flushTable();
                     result += `<div>${applyColorAndDots(line)}</div>`;
                 }
             });
+            flushTable();
             return result;
         }
 
@@ -478,7 +481,7 @@
                 } catch (e) { alert('Failed to open file, using fallback.'); }
             }
             if (!file && event && event.target && event.target.files)
-                { file = event.target.files; currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;}
+                { file = event.target.files[0]; currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;}
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -548,8 +551,8 @@
             printWindow.document.write('@page{size:A4;margin:1cm;}body{font-family:monospace;font-weight:bold;white-space:pre;}');
             printWindow.document.write('.blue-notes{color:blue;} .red-chords{color:red;} .sharp,.flat{font-size:0.8em;vertical-align:super;}');
             printWindow.document.write('.green-section-label{font-weight:bold;color:green;}');
-            printWindow.document.write('.table-row{display:grid;grid-template-columns:repeat(var(--colnum,2),1fr);}');
-            printWindow.document.write('.table-cell{text-align:center;padding:4px 2px;white-space:pre-wrap;box-sizing:border-box;}');
+            printWindow.document.write('.table-align{width:100%;table-layout:fixed;border-collapse:collapse;}');
+            printWindow.document.write('.table-align td{border:1px solid #ddd;padding:6px 2px;word-break:break-word;vertical-align:middle;font-size:1em;}');
             printWindow.document.write('</style></head><body>');
             printWindow.document.write(`<h1 style="text-align:center;">${name}${key?' - '+key:''}${time?' - '+time:''}</h1><hr>`);
             printWindow.document.write(outputContent);
