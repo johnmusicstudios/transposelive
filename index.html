@@ -1,572 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>JMS Transpose Live</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            margin: 0;
-            padding: 10px;
-        }
-        h1 {
-            font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
-            font-size: 1.8em;
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .container {
-            max-width: 700px;
-            margin: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .accidentals-notes-chords {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: space-between;
-        }
-        .radio-button-group {
-            display: flex;
-            flex: 1;
-            justify-content: space-evenly;
-            gap: 5px;
-        }
-        .radio-button {
-            flex: 1;
-            text-align: center;
-            padding: 8px;
-            font-size: 0.95em;
-            border: 2px solid #3498db;
-            background: white;
-            color: #3498db;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background .3s, color .3s;
-            user-select: none;
-        }
-        .radio-button.selected {
-            background: #3498db;
-            color: white;
-        }
-        input[type="radio"] {
-            display: none;
-        }
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .controls button, .controls input {
-            flex: 1;
-            min-width: 70px;
-        }
-        #inputTextArea {
-            width: 100%;
-            min-height: 180px;
-            max-height: 360px;
-            font-family: monospace;
-            font-size: 1.1em;
-            border: 1px solid #bbb;
-            padding: 12px;
-            white-space: pre;
-            word-wrap: break-word;
-            overflow-y: auto;
-            background: #fff;
-            border-radius: 6px;
-            outline: none;
-            margin-bottom: 5px;
-            box-sizing: border-box;
-        }
-        label {
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-        input[type="text"], input[type="number"] {
-            padding: 8px;
-            border: 1px solid #bbb;
-            border-radius: 4px;
-            font-size: 1em;
-            width: 100%;
-        }
-        button {
-            background: #3498db;
-            color: white;
-            padding: 8px;
-            font-size: 0.95em;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background .3s, box-shadow .3s;
-        }
-        button:disabled {
-            background: #eee;
-            color: #777;
-            cursor: not-allowed;
-        }
-        .blue-notes { color: #1e90ff; }
-        .red-chords { color: #e74c3c; }
-        .sharp, .flat {font-size: 0.8em;vertical-align: super;}
-        .print-controls, .title-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        @media (max-width: 480px) {
-            .container {padding: 2px;}
-            h1 {font-size: 1.2em;}
-            .radio-button {font-size: 0.8em; padding: 5px;}
-            #inputTextArea {min-height: 120px; font-size: 1em;}
-            .controls {flex-direction: row;}
-        }
-        /* Table styling for alignment */
-        .table-row {
-            display: grid;
-            grid-template-columns: repeat(var(--colnum), 1fr);
-            gap: 0;
-            border-bottom: 1px solid #ddd;
-        }
-        .table-cell {
-            text-align: center;
-            padding: 4px 2px;
-            white-space: pre-wrap;
-            box-sizing: border-box;
-            border-right: 1px solid #ddd;
-        }
-        .table-cell:last-child {border-right: none;}
-        .green-section-label {
-            font-weight: bold;
-            color: green;
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JMS Transpose Live</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f9;
+        color: #333;
+        margin: 0;
+        padding: 10px;
+    }
+    h1 {
+        font-family: Palatino, serif;
+        font-size: 1.8em;
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .container {
+        max-width: 700px;
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .radio-button-group {
+        display: flex;
+        gap: 8px;
+    }
+    .radio-button {
+        flex: 1;
+        text-align: center;
+        padding: 8px;
+        font-size: 0.95em;
+        border: 2px solid #3498db;
+        background: white;
+        color: #3498db;
+        border-radius: 5px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .radio-button.selected {
+        background: #3498db;
+        color: white;
+    }
+    input[type="radio"] { display: none; }
+    .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .controls button, .controls input {
+        flex: 1;
+        min-width: 70px;
+    }
+    #inputTextArea {
+        width: 100%;
+        min-height: 180px;
+        max-height: 360px;
+        font-family: monospace;
+        font-size: 1.1em;
+        border: 1px solid #bbb;
+        padding: 12px;
+        background: #fff;
+        border-radius: 6px;
+        box-sizing: border-box;
+        white-space: pre;
+        overflow-y: auto;
+        margin-bottom: 5px;
+    }
+    /* Notebook bar line style for musical columns */
+    .music-table-row {
+        display: flex;
+        align-items: stretch;
+        margin-bottom: 2px;
+        margin-top: 2px;
+    }
+    .music-bar-cell {
+        padding: 0 6px;
+        white-space: nowrap;
+        font-family: inherit;
+        font-size: inherit;
+        text-align: center;
+        position: relative;
+    }
+    .music-bar-cell:not(:last-child)::after {
+        content: '';
+        display: block;
+        position: absolute;
+        right: -1px;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background: linear-gradient(to bottom,#333 80%,transparent 100%);
+        opacity: 0.35;
+    }
+    .blue-notes { color: #1e90ff; }
+    .red-chords { color: #e74c3c; }
+    .sharp, .flat { font-size: 0.8em; vertical-align: super; }
+    .green-section-label {
+        font-weight: bold;
+        color: green;
+    }
+    @media (max-width: 480px) {
+        .container {padding: 2px;}
+        h1 {font-size: 1.2em;}
+        .radio-button {font-size: 0.8em; padding: 5px;}
+        #inputTextArea {min-height: 120px; font-size: 1em;}
+    }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>JMS Transpose Live</h1>
-        <div class="accidentals-notes-chords">
-            <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
-                <label class="radio-button selected"><input type="radio" name="accidental" value="sharp" checked />Sharps</label>
-                <label class="radio-button"><input type="radio" name="accidental" value="flat" />Flats</label>
-            </div>
-            <div class="radio-button-group" role="radiogroup" aria-label="Mode">
-                <label class="radio-button selected"><input type="radio" name="mode" value="notes" checked />Notes</label>
-                <label class="radio-button"><input type="radio" name="mode" value="chords" />Chords</label>
-                <label class="radio-button"><input type="radio" name="mode" value="lyrics" />Lyrics</label>
-            </div>
+<div class="container">
+    <h1>JMS Transpose Live</h1>
+    <div class="accidentals-notes-chords">
+        <div class="radio-button-group">
+            <label class="radio-button selected"><input type="radio" name="accidental" value="sharp" checked />Sharps</label>
+            <label class="radio-button"><input type="radio" name="accidental" value="flat" />Flats</label>
         </div>
-        <div class="controls">
-            <button id="transposeMinus">-</button>
-            <input type="number" id="semitoneValue" value="0" min="-12" max="12" readonly />
-            <button id="transposePlus">+</button>
-            <button id="resetButton">Reset</button>
-        </div>
-        <div id="inputTextArea" contenteditable="true" placeholder="Enter notes, chords, or lyrics here..."></div>
-        <div class="title-controls">
-            <label for="username">Title:</label>
-            <input type="text" id="username" placeholder="Enter Title" />
-        </div>
-        <div class="print-controls">
-            <div>
-                <label for="key">Key:</label>
-                <input type="text" id="key" placeholder="Enter Key" />
-            </div>
-            <div>
-                <label for="time">Time:</label>
-                <input type="text" id="time" placeholder="Enter Time Signature" />
-            </div>
-        </div>
-        <div class="controls">
-            <button id="printBtn">Print</button>
-            <button id="saveBtn">Save</button>
-            <button id="updateBtn" disabled>Update</button>
-            <button id="importBtn">Open</button>
-            <input type="file" id="importFile" style="display: none;" accept=".json" />
+        <div class="radio-button-group">
+            <label class="radio-button selected"><input type="radio" name="mode" value="notes" checked />Notes</label>
+            <label class="radio-button"><input type="radio" name="mode" value="chords" />Chords</label>
+            <label class="radio-button"><input type="radio" name="mode" value="lyrics" />Lyrics</label>
         </div>
     </div>
-    <script>
-        // ------------ Data & State ---------------
-        const inputTextArea   = document.getElementById('inputTextArea');
-        const semitoneValue  = document.getElementById('semitoneValue');
-        const transposeMinus = document.getElementById('transposeMinus');
-        const transposePlus  = document.getElementById('transposePlus');
-        const resetButton    = document.getElementById('resetButton');
-        const printBtn       = document.getElementById('printBtn');
-        const saveBtn        = document.getElementById('saveBtn');
-        const updateBtn      = document.getElementById('updateBtn');
-        const importBtn      = document.getElementById('importBtn');
-        const importFile     = document.getElementById('importFile');
-        const nameInput      = document.getElementById('username');
-        const keyInput       = document.getElementById('key');
-        const timeInput      = document.getElementById('time');
-        let semitones = 0, originalText = '', originalKey = '';
-        let accidentalPreference = 'sharp', modePreference = 'notes';
-        let jmsDirHandle = null, currentFileHandle = null, currentSubfolderHandle = null;
-        const sharpNotes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-        const flatNotes  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
-        const validChordExtensions = ['maj7','m7','m','M','dim','aug','sus2','sus4','add9','7','6','9','11','13'];
-
-        // Permissions and storage (File System Access API)
-        const DB_NAME = 'JmsTransposeLive', STORE_NAME = 'directoryHandles';
-        let db;
-        function openIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
-                request.onsuccess = e => { db = e.target.result; resolve(db); };
-                request.onerror = e => reject(e.target.error);
+    <div class="controls">
+        <button id="transposeMinus">-</button>
+        <input type="number" id="semitoneValue" value="0" min="-12" max="12" readonly />
+        <button id="transposePlus">+</button>
+        <button id="resetButton">Reset</button>
+    </div>
+    <div id="inputTextArea" contenteditable="true" placeholder="Enter notes, chords, or lyrics here..."></div>
+    <div class="title-controls">
+        <label for="username">Title:</label>
+        <input type="text" id="username" placeholder="Enter Title" />
+    </div>
+    <div class="print-controls">
+        <div>
+            <label for="key">Key:</label>
+            <input type="text" id="key" placeholder="Enter Key" />
+        </div>
+        <div>
+            <label for="time">Time:</label>
+            <input type="text" id="time" placeholder="Enter Time Signature" />
+        </div>
+    </div>
+    <div class="controls">
+        <button id="printBtn">Print</button>
+        <button id="saveBtn">Save</button>
+        <button id="updateBtn" disabled>Update</button>
+        <button id="importBtn">Open</button>
+        <input type="file" id="importFile" style="display: none;" accept=".json" />
+    </div>
+</div>
+<script>
+    // Music notebook bar lines, clean notebook style
+    function formatText(text) {
+        if (!text.trim()) return '';
+        // Section headings in < > turned green and bold
+        text = text.replace(/<([^>]+?)>/g, (match, c) =>
+            `<span class="green-section-label">${c.trim()}</span>`);
+        // Process lines for musical bars
+        const lines = text.split('\n');
+        // First, gather all rows with pipes, so we can find max cell width per column
+        let maxWidths = [];
+        let rows = lines.map(line => line.includes('|') ? line.split('|').map(cell => cell.trim()) : null);
+        rows.forEach(cells => {
+            if (!cells) return;
+            cells.forEach((cell, idx) => {
+                let len = cell.length;
+                if (!maxWidths[idx] || maxWidths[idx] < len) maxWidths[idx] = len;
             });
-        }
-        async function saveDirectoryHandle(handle) {
-            const db = await openIndexedDB();
-            const tx = db.transaction([STORE_NAME],'readwrite');
-            tx.objectStore(STORE_NAME).put(handle,'jmsDirHandle');
-            return new Promise((resolve, reject) => {
-                tx.oncomplete = () => resolve();
-                tx.onerror = () => reject(tx.error);
-            });
-        }
-        async function getDirectoryHandle() {
-            const db = await openIndexedDB();
-            const tx = db.transaction([STORE_NAME],'readonly');
-            const store = tx.objectStore(STORE_NAME);
-            const request = store.get('jmsDirHandle');
-            return new Promise((resolve, reject) => {
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-        // Initialize JMS folder & subfolders ONLY ONCE
-        async function initJmsFolder() {
-            if (!window.showDirectoryPicker) return null;
-            try {
-                if (!jmsDirHandle) {
-                    const stored = await getDirectoryHandle();
-                    if (stored) {
-                        const perm = await stored.queryPermission({mode:'readwrite'});
-                        if (perm === 'granted' || (perm === 'prompt' && await stored.requestPermission({mode:'readwrite'}) === 'granted')) {
-                            jmsDirHandle = stored;
-                        }
-                    }
-                }
-                if (!jmsDirHandle) {
-                    const baseDir = await window.showDirectoryPicker({mode:'readwrite'});
-                    jmsDirHandle = await baseDir.getDirectoryHandle('JMS',{create:true});
-                    await saveDirectoryHandle(jmsDirHandle);
-                }
-                await Promise.all([
-                    jmsDirHandle.getDirectoryHandle('CHORDS', {create:true}),
-                    jmsDirHandle.getDirectoryHandle('NOTES', {create:true}),
-                    jmsDirHandle.getDirectoryHandle('LYRICS', {create:true})
-                ]);
-            } catch (e) {
-                alert('Failed to setup device storage, using download fallback.');
-                return null;
-            }
-            return jmsDirHandle;
-        }
-        async function getSubfolderHandle(mode) {
-            if (!jmsDirHandle) jmsDirHandle = await initJmsFolder();
-            if (!jmsDirHandle) return null;
-            try { return await jmsDirHandle.getDirectoryHandle(mode.toUpperCase(), {create:true}); }
-            catch(e) { return null; }
-        }
-        // ----- Transpose Logic -----
-        function noteIndex(note) {
-            let i = sharpNotes.indexOf(note);
-            return i >= 0 ? i : flatNotes.indexOf(note);
-        }
-        function transposeNote(note, shift) {
-            const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
-            let idx = noteIndex(note);
-            if (idx === -1) return note;
-            return notes[(idx + shift + 12) % 12];
-        }
-        function validateNoteOrChord(note, ext) {
-            return (sharpNotes.includes(note) || flatNotes.includes(note)) && (!ext || validChordExtensions.includes(ext));
-        }
-        function transposeText(text, shift) {
-            // Detect chords and notes (A-G, with #/b)
-            return text.replace(/([A-G])([#b]?)(?:([\d'])?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
-                (m,n,a,o,ext) => validateNoteOrChord(n+(a||''),ext) ?
-                    transposeNote(n+(a||''),shift)+(o?o:'')+(ext?ext:'') : m);
-        }
-        function applyAccidentalPreference(text) {
-            return text.replace(/([A-G])([#b]?)(?:([\d'])?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
-                (m,n,a,o,ext) => {
-                    let idx = noteIndex(n+(a||''));
-                    if (idx < 0) return m;
-                    let notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
-                    return notes[idx]+(o?o:'')+(ext?ext:'');
-                });
-        }
-        // -------------- Formatting Logic --------------
-        function applyColorAndDots(text) {
-            if (modePreference === 'lyrics') return text;
-            return text.replace(/([A-G])([#b]?)([\d']?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
-                (m,n,a,o,ext) => {
-                    let colorClass = modePreference === 'notes' ? 'blue-notes' : 'red-chords';
-                    let noteHtml = `<span class="note-wrapper">${n}`;
-                    if (a === '#') noteHtml += `<span class="sharp">#</span>`;
-                    if (a === 'b') noteHtml += `<span class="flat">b</span>`;
-                    noteHtml += `</span>`;
-                    return `<span class="${colorClass} note-group">${noteHtml}${o||''}${ext?`<span class="${colorClass}">${ext}</span>`:''}</span>`;
-                });
-        }
-        function formatText(text) {
-            if (!text.trim()) return '';
-            // Green headings: <Some Heading>
-            text = text.replace(/<([^>]+?)>/g, (match, c) => {
-                c = c.trim();
-                return c ? `<span class="green-section-label">${c}</span>` : match;
-            });
-
-            // Table code for | alignment
-            let result = '';
-            let lines = text.split('\n');
-            let parsedTableRows = []; let tableCols = 0;
-            lines.forEach(line => {
-                if (line.includes('|')) {
-                    let cols = line.split('|').map(x=>x.trim());
-                    if (cols.length > tableCols) tableCols = cols.length;
-                    parsedTableRows.push(cols);
-                } else {
-                    parsedTableRows.push(false);
-                }
-            });
-
-            let lineIdx = 0;
-            lines.forEach((line,idx) => {
-                if (parsedTableRows[idx]) {
-                    result += `<div class="table-row" style="--colnum:${tableCols}">` +
-                        parsedTableRows[idx].map(c => `<span class="table-cell">${applyColorAndDots(c)}</span>`).join('') +
-                        `</div>`;
-                } else {
-                    result += `<div>${applyColorAndDots(line)}</div>`;
-                }
-            });
-            return result;
-        }
-
-        function updateTransposition() {
-            let t = modePreference === 'lyrics' ? originalText : transposeText(originalText, semitones);
-            if (modePreference !== 'lyrics') t = applyAccidentalPreference(t);
-            inputTextArea.innerHTML = formatText(t);
-            let currentKey = modePreference === 'lyrics' ? originalKey : transposeText(originalKey, semitones);
-            if (modePreference !== 'lyrics') currentKey = applyAccidentalPreference(currentKey);
-            keyInput.value = currentKey;
-        }
-
-        // Convert contenteditable to plain text
-        function handleInputChange() {
-            let clone = inputTextArea.cloneNode(true);
-            clone.querySelectorAll('.green-section-label').forEach(span => {
-                span.replaceWith(document.createTextNode(`<${span.textContent}>`));
-            });
-            let walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
-            let text = '', lastBlock = false;
-            while (walker.nextNode()) {
-                let node = walker.currentNode;
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    if (node.tagName === 'BR') { text += '\n'; lastBlock = true; }
-                    else if (node.tagName === 'DIV') { if (!lastBlock) text += '\n'; lastBlock = true; }
-                    else { lastBlock = false; }
-                } else if (node.nodeType === Node.TEXT_NODE) {
-                    text += node.textContent; lastBlock = false;
-                }
-            }
-            if (lastBlock) text += '\n';
-            if (semitones === 0 || modePreference === 'lyrics') originalText = text;
-            else originalText = transposeText(text, -semitones); // store untransposed
-        }
-        let inputChangeTimeout;
-        function handleInputChangeDebounced() {
-            clearTimeout(inputChangeTimeout);
-            inputChangeTimeout = setTimeout(handleInputChange, 250);
-        }
-        // ----- Button Handlers -----
-        function handleTransposeClick(dir) {
-            let st = semitones;
-            if (dir === 'minus' && st > -12) st--;
-            if (dir === 'plus'  && st < 12) st++;
-            semitones = st;
-            semitoneValue.value = st;
-            updateTransposition();
-        }
-        function reset() {
-            semitones = 0;
-            semitoneValue.value = 0;
-            inputTextArea.innerHTML = formatText(originalText);
-            keyInput.value = originalKey;
-            updateTransposition();
-        }
-        function handleKeyInputChange() {
-            let key = keyInput.value;
-            if (semitones === 0 || modePreference === 'lyrics') originalKey = key;
-            else originalKey = transposeText(key, -semitones);
-        }
-        // ---- Persistence ----
-        async function saveAndExport() {
-            const name = nameInput.value.trim() || 'Untitled';
-            const key = keyInput.value.trim();
-            const keySignature = timeInput.value.trim();
-            const state = {
-                title: name, key: key, timeSignature: keySignature,
-                content: originalText, accidentalPreference, modePreference, semitones: 0
-            };
-            const fileName = `${name}${key?'-'+key:''}${keySignature?'-'+keySignature:''}.json`;
-            const fileContent = JSON.stringify(state, null, 2);
-            if (window.showDirectoryPicker) {
-                const subfolderHandle = await getSubfolderHandle(modePreference);
-                if (subfolderHandle) {
-                    try {
-                        const fileHandle = await subfolderHandle.getFileHandle(fileName, {create:true});
-                        const writable = await fileHandle.createWritable();
-                        await writable.write(fileContent); await writable.close();
-                        currentFileHandle = fileHandle; currentSubfolderHandle = subfolderHandle;
-                        updateBtn.disabled = false; alert('File saved successfully!');
-                        return;
-                    } catch (e) { alert('Failed to save file, using download fallback.'); }
-                }
-            }
-            // fallback download
-            const blob = new Blob([fileContent], {type:'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
-            URL.revokeObjectURL(url);
-            currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;
-        }
-        async function updateExistingFile() {
-            if (!currentFileHandle || !currentSubfolderHandle) {
-                alert('No file opened. Choose Save or Open before updating.'); return;
-            }
-            const name = nameInput.value.trim() || 'Untitled', key = keyInput.value.trim(),
-                  keySignature = timeInput.value.trim();
-            const state = {
-                title: name, key: key, timeSignature: keySignature,
-                content: originalText, accidentalPreference, modePreference, semitones: 0
-            };
-            const fileContent = JSON.stringify(state,null,2);
-            try {
-                const writable = await currentFileHandle.createWritable();
-                await writable.write(fileContent); await writable.close();
-                alert('File updated!');
-            } catch (e) { alert('Failed to update file.'); }
-        }
-        async function importState(event) {
-            let file = null, fileHandle = null;
-            if (window.showDirectoryPicker) {
-                try {
-                    const subfolderHandle = await getSubfolderHandle(modePreference);
-                    if (subfolderHandle && (!event || !event.target || !event.target.files)) {
-                        const pickerResult = await window.showOpenFilePicker({
-                            startIn: subfolderHandle,
-                            types: [{description:'JSON Files',accept:{'application/json':['.json']}}],
-                            multiple: false
-                        });
-                        fileHandle = pickerResult[0];
-                        file = await fileHandle.getFile();
-                        currentFileHandle = fileHandle;
-                        currentSubfolderHandle = subfolderHandle;
-                        updateBtn.disabled = false;
-                    }
-                } catch (e) { alert('Failed to open file, using fallback.'); }
-            }
-            if (!file && event && event.target && event.target.files)
-                { file = event.target.files; currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;}
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const state = JSON.parse(e.target.result);
-                    if (!state.content || !state.accidentalPreference || !state.modePreference)
-                        throw new Error('Invalid or corrupted file.');
-                    nameInput.value = state.title||''; keyInput.value = state.key||''; timeInput.value = state.timeSignature||'';
-                    originalText = state.content||''; originalKey = state.key||'';
-                    semitones = 0; semitoneValue.value = 0;
-                    accidentalPreference = state.accidentalPreference||'sharp';
-                    modePreference = state.modePreference||'notes';
-                    document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
-                    document.querySelector(`input[name="mode"][value="${modePreference}"]`).checked = true;
-                    setInitialSelected();
-                    updateTransposition();
-                } catch (e) {
-                    alert('Error: Invalid or corrupted file.');
-                    currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;
-                }
-            };
-            reader.readAsText(file);
-        }
-        function setInitialSelected() {
-            document.querySelectorAll('.radio-button-group input[name="accidental"]').forEach(r=>{
-                r.parentElement.classList.toggle('selected',r.checked);
-            });
-            document.querySelectorAll('.radio-button-group input[name="mode"]').forEach(r=>{
-                r.parentElement.classList.toggle('selected',r.checked);
-            });
-        }
-        // UI Handlers
-        document.querySelectorAll('input[name="accidental"]').forEach(radio=>
-            radio.addEventListener('change',()=>{
-                accidentalPreference = document.querySelector('input[name="accidental"]:checked').value;
-                currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;
-                setInitialSelected();
-                updateTransposition();
-            })
-        );
-        document.querySelectorAll('input[name="mode"]').forEach(radio=>
-            radio.addEventListener('change',()=>{
-                modePreference = document.querySelector('input[name="mode"]:checked').value;
-                currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;
-                setInitialSelected();
-                updateTransposition();
-            })
-        );
-        transposeMinus.addEventListener('click',()=>handleTransposeClick('minus'));
-        transposePlus.addEventListener('click',()=>handleTransposeClick('plus'));
-        resetButton.addEventListener('click',reset);
-        inputTextArea.addEventListener('input',handleInputChangeDebounced);
-        keyInput.addEventListener('input',handleKeyInputChange);
-        saveBtn.addEventListener('click',saveAndExport);
-        updateBtn.addEventListener('click',updateExistingFile);
-        importBtn.addEventListener('click',()=>{
-            if (window.showDirectoryPicker) {importState({});} else {importFile.click();}
         });
-        importFile && importFile.addEventListener('change',importState);
-
-        // ---------- Print output -----------
-        function printOutput() {
-            const name = nameInput.value.trim(), key = keyInput.value.trim(), time = timeInput.value.trim();
-            const outputContent = inputTextArea.innerHTML;
-            const printWindow = window.open('', '', 'width=800,height=600');
-            printWindow.document.write('<html><head><title>Print Output</title><style>');
-            printWindow.document.write('@page{size:A4;margin:1cm;}body{font-family:monospace;font-weight:bold;white-space:pre;}');
-            printWindow.document.write('.blue-notes{color:blue;} .red-chords{color:red;} .sharp,.flat{font-size:0.8em;vertical-align:super;}');
-            printWindow.document.write('.green-section-label{font-weight:bold;color:green;}');
-            printWindow.document.write('.table-row{display:grid;grid-template-columns:repeat(var(--colnum,2),1fr);}');
-            printWindow.document.write('.table-cell{text-align:center;padding:4px 2px;white-space:pre-wrap;box-sizing:border-box;}');
-            printWindow.document.write('</style></head><body>');
-            printWindow.document.write(`<h1 style="text-align:center;">${name}${key?' - '+key:''}${time?' - '+time:''}</h1><hr>`);
-            printWindow.document.write(outputContent);
-            printWindow.document.write('<div style="text-align:center;color:gray;font-size:0.8em;">created using johnmusicstudios.github.io/transposelive/</div>');
-            printWindow.document.write('</body></html>');
-            printWindow.document.close(); printWindow.focus(); printWindow.print();
-        }
-        printBtn.addEventListener('click',printOutput);
-
-        // On first page load -- storage permission and UI setup
-        window.onload = async () => {
-            await initJmsFolder();
-            originalText = inputTextArea.innerText || '';
-            originalKey = keyInput.value || '';
-            updateTransposition();
-            setInitialSelected();
-        };
-    </script>
+        // Build HTML:
+        let html = '';
+        lines.forEach((line, idx) => {
+            if (rows[idx]) {
+                html += `<div class="music-table-row">`;
+                rows[idx].forEach((cell, ci) => {
+                    // The cell's min-width is proportional to its longest peer
+                    let minw = (maxWidths[ci]||2) * 0.7 + 2 + 'ch';
+                    html += `<span class="music-bar-cell" style="min-width:${minw};">${applyColorAndDots(cell)}</span>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div style="white-space: pre;">${applyColorAndDots(line)}</div>`;
+            }
+        });
+        return html;
+    }
+    function applyColorAndDots(text) {
+        return text.replace(/([A-G])([#b]?)([\d']?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
+            (m,n,a,o,ext) => {
+                if (!n) return m;
+                let colorClass = modePreference === 'notes' ? 'blue-notes' : 'red-chords';
+                let noteHtml = `<span class="note-wrapper">${n}`;
+                if (a === '#') noteHtml += `<span class="sharp">#</span>`;
+                if (a === 'b') noteHtml += `<span class="flat">b</span>`;
+                noteHtml += `</span>`;
+                return `<span class="${colorClass} note-group">${noteHtml}${o||''}${ext?`<span class="${colorClass}">${ext}</span>`:''}</span>`;
+            });
+    }
+    // (The rest of your transposition, file, event handler code stays exactly as in your provided script)
+    // Example: updateTransposition, save, import, print etc //
+    // Replace your current formatText function with this one above; rest of the JS can be reused!
+</script>
 </body>
 </html>
