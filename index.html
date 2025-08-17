@@ -332,35 +332,16 @@
     let html = '';
     lines.forEach(line => {
         if (line.trim() === '') {
-            // Empty line, show a larger gap (part finished/section break)
+            // Empty line, show a larger gap (section break)
             html += `<div style="height:1.5em;"></div>`;
-        } else if (line.includes('|')) {
-            // Musical bar line
-            const parts = line.split('|');
-            html += `<div style="display: flex; align-items: center; padding: 2px 0;">`;
-            parts.forEach((part, idx) => {
-                // Each segment, trimmed, colored
-                if (part.trim()) {
-                    html += `<span style="min-width:1em; margin-right:0.25em;">${applyColorAndDots(part.trim())}</span>`;
-                }
-                // Each bar except last
-                if (idx < parts.length - 1) {
-                    html += `<span style="
-                        display:inline-block;
-                        font-weight:bold;
-                        color:black;
-                        font-size:1.3em;
-                        margin: 0 0.1em;">|</span>`;
-                }
-            });
-            html += `</div>`;
         } else {
-            // Plain musical/lyrics/chord line
+            // Plain line: treat everything the same (even if line contains |)
             html += `<div style="margin-bottom:0.2em;">${applyColorAndDots(line)}</div>`;
         }
     });
     return html;
 }
+
 
 
         function updateTransposition() {
