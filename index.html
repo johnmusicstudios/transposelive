@@ -157,40 +157,50 @@
 </div>
 <script>
     // Music notebook bar lines, clean notebook style
-    function formatText(text) {
-        if (!text.trim()) return '';
-        // Section headings in < > turned green and bold
-        text = text.replace(/<([^>]+?)>/g, (match, c) =>
-            `<span class="green-section-label">${c.trim()}</span>`);
-        // Process lines for musical bars
-        const lines = text.split('\n');
-        // First, gather all rows with pipes, so we can find max cell width per column
-        let maxWidths = [];
-        let rows = lines.map(line => line.includes('|') ? line.split('|').map(cell => cell.trim()) : null);
-        rows.forEach(cells => {
-            if (!cells) return;
-            cells.forEach((cell, idx) => {
-                let len = cell.length;
-                if (!maxWidths[idx] || maxWidths[idx] < len) maxWidths[idx] = len;
+   function formatText(text) {
+    if (!text.trim()) return '';
+
+    // Headings in < > green/bold
+    text = text.replace(/<([^>]+?)>/g, (match, c) => {
+        c = c.trim();
+        return c ? `<span class="green-section-label">${c}</span>` : match;
+    });
+
+    // Split lines
+    const lines = text.split('\n');
+    let html = '';
+    lines.forEach(line => {
+        if (line.trim() === '') {
+            // Empty line, show a larger gap (part finished/section break)
+            html += `<div style="height:1.5em;"></div>`;
+        } else if (line.includes('|')) {
+            // Musical bar line
+            const parts = line.split('|');
+            html += `<div style="display: flex; align-items: center; padding: 2px 0;">`;
+            parts.forEach((part, idx) => {
+                // Each segment, trimmed, colored
+                if (part.trim()) {
+                    html += `<span style="min-width:1em; margin-right:0.25em;">${applyColorAndDots(part.trim())}</span>`;
+                }
+                // Each bar except last
+                if (idx < parts.length - 1) {
+                    html += `<span style="
+                        display:inline-block;
+                        font-weight:bold;
+                        color:black;
+                        font-size:1.3em;
+                        margin: 0 0.1em;">|</span>`;
+                }
             });
-        });
-        // Build HTML:
-        let html = '';
-        lines.forEach((line, idx) => {
-            if (rows[idx]) {
-                html += `<div class="music-table-row">`;
-                rows[idx].forEach((cell, ci) => {
-                    // The cell's min-width is proportional to its longest peer
-                    let minw = (maxWidths[ci]||2) * 0.7 + 2 + 'ch';
-                    html += `<span class="music-bar-cell" style="min-width:${minw};">${applyColorAndDots(cell)}</span>`;
-                });
-                html += `</div>`;
-            } else {
-                html += `<div style="white-space: pre;">${applyColorAndDots(line)}</div>`;
-            }
-        });
-        return html;
-    }
+            html += `</div>`;
+        } else {
+            // Plain musical/lyrics/chord line
+            html += `<div style="margin-bottom:0.2em;">${applyColorAndDots(line)}</div>`;
+        }
+    });
+    return html;
+}
+
     function applyColorAndDots(text) {
         return text.replace(/([A-G])([#b]?)([\d']?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
             (m,n,a,o,ext) => {
