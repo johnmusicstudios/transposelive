@@ -118,31 +118,26 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+        .green-section-label {
+            font-weight: bold;
+            color: green;
+        }
+        .chord-box {
+            display: inline-block;
+            min-width: 2em;
+            max-width: 2.2em;
+            text-align: center;
+            font-family: monospace;
+            font-weight: bold;
+            padding: 0 2px;
+        }
         @media (max-width: 480px) {
             .container {padding: 2px;}
             h1 {font-size: 1.2em;}
             .radio-button {font-size: 0.8em; padding: 5px;}
             #inputTextArea {min-height: 120px; font-size: 1em;}
             .controls {flex-direction: row;}
-        }
-        /* Table styling for alignment */
-        .table-row {
-            display: grid;
-            grid-template-columns: repeat(var(--colnum), 1fr);
-            gap: 0;
-            border-bottom: 1px solid #ddd;
-        }
-        .table-cell {
-            text-align: center;
-            padding: 4px 2px;
-            white-space: pre-wrap;
-            box-sizing: border-box;
-            border-right: 1px solid #ddd;
-        }
-        .table-cell:last-child {border-right: none;}
-        .green-section-label {
-            font-weight: bold;
-            color: green;
+            .chord-box {min-width:1.5em;max-width:2em;font-size:0.95em;}
         }
     </style>
 </head>
@@ -241,7 +236,6 @@
                 request.onerror = () => reject(request.error);
             });
         }
-        // Initialize JMS folder & subfolders ONLY ONCE
         async function initJmsFolder() {
             if (!window.showDirectoryPicker) return null;
             try {
@@ -276,7 +270,58 @@
             try { return await jmsDirHandle.getDirectoryHandle(mode.toUpperCase(), {create:true}); }
             catch(e) { return null; }
         }
-        // ----- Transpose Logic -----
+
+        // Helper to box a chord/note/symbol (always fixed width)
+        function boxChord(chord, colorClass='') {
+            return `<span class="chord-box ${colorClass}">${chord}</span>`;
+        }
+
+        // Chord/Note/Word splitting & coloring logic
+        function applyColorAndDots(text) {
+            if (modePreference === 'lyrics') {
+                return text.split(/\s+/).map(word =>
+                    `<span class="chord-box">${word}</span>`
+                ).join('');
+            }
+            // Match notes/chords (A-G, possibly # or b, possibly extension)
+            return text.split(/\s+/).map(word => {
+                let match = word.match(/^([A-G])([#b]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?$/);
+                if (match) {
+                    const note = match[1], accidental = match[2] || '', ext = match[3] || '';
+                    let colorClass = modePreference === 'notes' ? 'blue-notes' : 'red-chords';
+                    let chordText = note;
+                    if (accidental === '#') chordText += '<span class="sharp">#</span>';
+                    if (accidental === 'b') chordText += '<span class="flat">b</span>';
+                    chordText += ext ? `<span>${ext}</span>` : '';
+                    return boxChord(chordText, colorClass);
+                }
+                // Just box plain word
+                return boxChord(word);
+            }).join('');
+        }
+
+        // Format each line in fixed-width boxes, section headings green/bold
+        function formatText(text) {
+            if (!text.trim()) return '';
+            // Headings in < > green/bold
+            text = text.replace(/<([^>]+?)>/g, (match, c) => {
+                c = c.trim();
+                return c ? `<span class="green-section-label">${c}</span>` : match;
+            });
+
+            const lines = text.split('\n');
+            let html = '';
+            lines.forEach(line => {
+                if (line.trim() === '') {
+                    html += `<div style="height:1.5em;"></div>`;
+                } else {
+                    html += `<div>${applyColorAndDots(line)}</div>`;
+                }
+            });
+            return html;
+        }
+
+        // Transpose Logic
         function noteIndex(note) {
             let i = sharpNotes.indexOf(note);
             return i >= 0 ? i : flatNotes.indexOf(note);
@@ -291,59 +336,21 @@
             return (sharpNotes.includes(note) || flatNotes.includes(note)) && (!ext || validChordExtensions.includes(ext));
         }
         function transposeText(text, shift) {
-            // Detect chords and notes (A-G, with #/b)
-            return text.replace(/([A-G])([#b]?)(?:([\d'])?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
-                (m,n,a,o,ext) => validateNoteOrChord(n+(a||''),ext) ?
-                    transposeNote(n+(a||''),shift)+(o?o:'')+(ext?ext:'') : m);
+            return text.replace(/([A-G])([#b]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
+                (m,n,a,ext) => validateNoteOrChord(n+(a||''),ext) ?
+                    transposeNote(n+(a||''),shift)+(ext?ext:'') : m);
         }
         function applyAccidentalPreference(text) {
-            return text.replace(/([A-G])([#b]?)(?:([\d'])?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
-                (m,n,a,o,ext) => {
+            return text.replace(/([A-G])([#b]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
+                (m,n,a,ext) => {
                     let idx = noteIndex(n+(a||''));
                     if (idx < 0) return m;
                     let notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
-                    return notes[idx]+(o?o:'')+(ext?ext:'');
+                    return notes[idx]+(ext?ext:'');
                 });
         }
-        // -------------- Formatting Logic --------------
-        function applyColorAndDots(text) {
-            if (modePreference === 'lyrics') return text;
-            return text.replace(/([A-G])([#b]?)([\d']?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?/g,
-                (m,n,a,o,ext) => {
-                    let colorClass = modePreference === 'notes' ? 'blue-notes' : 'red-chords';
-                    let noteHtml = `<span class="note-wrapper">${n}`;
-                    if (a === '#') noteHtml += `<span class="sharp">#</span>`;
-                    if (a === 'b') noteHtml += `<span class="flat">b</span>`;
-                    noteHtml += `</span>`;
-                    return `<span class="${colorClass} note-group">${noteHtml}${o||''}${ext?`<span class="${colorClass}">${ext}</span>`:''}</span>`;
-                });
-        }
-        function formatText(text) {
-    if (!text.trim()) return '';
 
-    // Headings in < > green/bold
-    text = text.replace(/<([^>]+?)>/g, (match, c) => {
-        c = c.trim();
-        return c ? `<span class="green-section-label">${c}</span>` : match;
-    });
-
-    // Split lines
-    const lines = text.split('\n');
-    let html = '';
-    lines.forEach(line => {
-        if (line.trim() === '') {
-            // Empty line, show a larger gap (section break)
-            html += `<div style="height:1.5em;"></div>`;
-        } else {
-            // Plain line: treat everything the same (even if line contains |)
-            html += `<div style="margin-bottom:0.2em;">${applyColorAndDots(line)}</div>`;
-        }
-    });
-    return html;
-}
-
-
-
+        // Transposition update
         function updateTransposition() {
             let t = modePreference === 'lyrics' ? originalText : transposeText(originalText, semitones);
             if (modePreference !== 'lyrics') t = applyAccidentalPreference(t);
@@ -353,7 +360,6 @@
             keyInput.value = currentKey;
         }
 
-        // Convert contenteditable to plain text
         function handleInputChange() {
             let clone = inputTextArea.cloneNode(true);
             clone.querySelectorAll('.green-section-label').forEach(span => {
@@ -380,7 +386,6 @@
             clearTimeout(inputChangeTimeout);
             inputChangeTimeout = setTimeout(handleInputChange, 250);
         }
-        // ----- Button Handlers -----
         function handleTransposeClick(dir) {
             let st = semitones;
             if (dir === 'minus' && st > -12) st--;
@@ -401,7 +406,6 @@
             if (semitones === 0 || modePreference === 'lyrics') originalKey = key;
             else originalKey = transposeText(key, -semitones);
         }
-        // ---- Persistence ----
         async function saveAndExport() {
             const name = nameInput.value.trim() || 'Untitled';
             const key = keyInput.value.trim();
@@ -425,7 +429,6 @@
                     } catch (e) { alert('Failed to save file, using download fallback.'); }
                 }
             }
-            // fallback download
             const blob = new Blob([fileContent], {type:'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
@@ -469,7 +472,7 @@
                 } catch (e) { alert('Failed to open file, using fallback.'); }
             }
             if (!file && event && event.target && event.target.files)
-                { file = event.target.files; currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;}
+                { file = event.target.files[0]; currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;}
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -501,7 +504,6 @@
                 r.parentElement.classList.toggle('selected',r.checked);
             });
         }
-        // UI Handlers
         document.querySelectorAll('input[name="accidental"]').forEach(radio=>
             radio.addEventListener('change',()=>{
                 accidentalPreference = document.querySelector('input[name="accidental"]:checked').value;
@@ -530,17 +532,15 @@
         });
         importFile && importFile.addEventListener('change',importState);
 
-        // ---------- Print output -----------
         function printOutput() {
             const name = nameInput.value.trim(), key = keyInput.value.trim(), time = timeInput.value.trim();
             const outputContent = inputTextArea.innerHTML;
             const printWindow = window.open('', '', 'width=800,height=600');
             printWindow.document.write('<html><head><title>Print Output</title><style>');
             printWindow.document.write('@page{size:A4;margin:1cm;}body{font-family:monospace;font-weight:bold;white-space:pre;}');
-            printWindow.document.write('.blue-notes{color:blue;} .red-chords{color:red;} .sharp,.flat{font-size:0.8em;vertical-align:super;}');
             printWindow.document.write('.green-section-label{font-weight:bold;color:green;}');
-            printWindow.document.write('.table-row{display:grid;grid-template-columns:repeat(var(--colnum,2),1fr);}');
-            printWindow.document.write('.table-cell{text-align:center;padding:4px 2px;white-space:pre-wrap;box-sizing:border-box;}');
+            printWindow.document.write('.blue-notes{color:blue;} .red-chords{color:red;} .sharp,.flat{font-size:0.8em;vertical-align:super;}');
+            printWindow.document.write('.chord-box{display:inline-block;min-width:2em;max-width:2.2em;text-align:center;font-family:monospace;font-weight:bold;padding:0 2px;}');
             printWindow.document.write('</style></head><body>');
             printWindow.document.write(`<h1 style="text-align:center;">${name}${key?' - '+key:''}${time?' - '+time:''}</h1><hr>`);
             printWindow.document.write(outputContent);
@@ -550,7 +550,6 @@
         }
         printBtn.addEventListener('click',printOutput);
 
-        // On first page load -- storage permission and UI setup
         window.onload = async () => {
             await initJmsFolder();
             originalText = inputTextArea.innerText || '';
