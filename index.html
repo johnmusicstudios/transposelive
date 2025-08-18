@@ -125,11 +125,13 @@
         .chord-box {
             display: inline-block;
             min-width: 2em;
-            max-width: 2.2em;
+            max-width: 2.1em;
             text-align: center;
             font-family: monospace;
             font-weight: bold;
-            padding: 0 2px;
+            padding: 0 1px;
+            margin-right: 1px;
+            vertical-align: middle;
         }
         @media (max-width: 480px) {
             .container {padding: 2px;}
@@ -137,7 +139,7 @@
             .radio-button {font-size: 0.8em; padding: 5px;}
             #inputTextArea {min-height: 120px; font-size: 1em;}
             .controls {flex-direction: row;}
-            .chord-box {min-width:1.5em;max-width:2em;font-size:0.95em;}
+            .chord-box {min-width:1.3em;max-width:1.7em;font-size:0.95em;}
         }
     </style>
 </head>
@@ -205,7 +207,6 @@
         const sharpNotes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
         const flatNotes  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
         const validChordExtensions = ['maj7','m7','m','M','dim','aug','sus2','sus4','add9','7','6','9','11','13'];
-
         // Permissions and storage (File System Access API)
         const DB_NAME = 'JmsTransposeLive', STORE_NAME = 'directoryHandles';
         let db;
@@ -270,45 +271,35 @@
             try { return await jmsDirHandle.getDirectoryHandle(mode.toUpperCase(), {create:true}); }
             catch(e) { return null; }
         }
-
-        // Helper to box a chord/note/symbol (always fixed width)
-        function boxChord(chord, colorClass='') {
-            return `<span class="chord-box ${colorClass}">${chord}</span>`;
+        // Chord box logic (works for lyrics, chords, or notes)
+        function boxWord(word, colorClass = '') {
+            return `<span class="chord-box${colorClass ? ' '+colorClass : ''}">${word}</span>`;
         }
-
-        // Chord/Note/Word splitting & coloring logic
         function applyColorAndDots(text) {
-            if (modePreference === 'lyrics') {
-                return text.split(/\s+/).map(word =>
-                    `<span class="chord-box">${word}</span>`
-                ).join('');
-            }
-            // Match notes/chords (A-G, possibly # or b, possibly extension)
+            // The logic below detects chords/notes, else treats as lyric/word.
+            const chordPattern = /^([A-G])([#b]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?$/i;
             return text.split(/\s+/).map(word => {
-                let match = word.match(/^([A-G])([#b]?)(maj7|m7|m|M|dim|aug|sus2|sus4|add9|7|6|9|11|13)?$/);
-                if (match) {
-                    const note = match[1], accidental = match[2] || '', ext = match[3] || '';
+                const m = word.match(chordPattern);
+                if (m && modePreference !== 'lyrics') {
+                    let base = m[1];
+                    let accidental = m[1] || '';
+                    let ext = m[2] || '';
                     let colorClass = modePreference === 'notes' ? 'blue-notes' : 'red-chords';
-                    let chordText = note;
-                    if (accidental === '#') chordText += '<span class="sharp">#</span>';
-                    if (accidental === 'b') chordText += '<span class="flat">b</span>';
-                    chordText += ext ? `<span>${ext}</span>` : '';
-                    return boxChord(chordText, colorClass);
+                    let html = base;
+                    if (accidental === '#') html += '<span class="sharp">#</span>';
+                    if (accidental === 'b') html += '<span class="flat">b</span>';
+                    html += ext ? `<span>${ext}</span>` : '';
+                    return boxWord(html, colorClass);
                 }
-                // Just box plain word
-                return boxChord(word);
+                return boxWord(word);
             }).join('');
         }
-
-        // Format each line in fixed-width boxes, section headings green/bold
         function formatText(text) {
             if (!text.trim()) return '';
             // Headings in < > green/bold
-            text = text.replace(/<([^>]+?)>/g, (match, c) => {
-                c = c.trim();
-                return c ? `<span class="green-section-label">${c}</span>` : match;
-            });
-
+            text = text.replace(/<([^>]+?)>/g, (match, c) =>
+                c.trim() ? `<span class="green-section-label">${c.trim()}</span>` : match
+            );
             const lines = text.split('\n');
             let html = '';
             lines.forEach(line => {
@@ -320,8 +311,6 @@
             });
             return html;
         }
-
-        // Transpose Logic
         function noteIndex(note) {
             let i = sharpNotes.indexOf(note);
             return i >= 0 ? i : flatNotes.indexOf(note);
@@ -349,8 +338,6 @@
                     return notes[idx]+(ext?ext:'');
                 });
         }
-
-        // Transposition update
         function updateTransposition() {
             let t = modePreference === 'lyrics' ? originalText : transposeText(originalText, semitones);
             if (modePreference !== 'lyrics') t = applyAccidentalPreference(t);
@@ -359,7 +346,6 @@
             if (modePreference !== 'lyrics') currentKey = applyAccidentalPreference(currentKey);
             keyInput.value = currentKey;
         }
-
         function handleInputChange() {
             let clone = inputTextArea.cloneNode(true);
             clone.querySelectorAll('.green-section-label').forEach(span => {
@@ -472,7 +458,7 @@
                 } catch (e) { alert('Failed to open file, using fallback.'); }
             }
             if (!file && event && event.target && event.target.files)
-                { file = event.target.files[0]; currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;}
+                { file = event.target.files; currentFileHandle = null; currentSubfolderHandle = null; updateBtn.disabled = true;}
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -540,7 +526,7 @@
             printWindow.document.write('@page{size:A4;margin:1cm;}body{font-family:monospace;font-weight:bold;white-space:pre;}');
             printWindow.document.write('.green-section-label{font-weight:bold;color:green;}');
             printWindow.document.write('.blue-notes{color:blue;} .red-chords{color:red;} .sharp,.flat{font-size:0.8em;vertical-align:super;}');
-            printWindow.document.write('.chord-box{display:inline-block;min-width:2em;max-width:2.2em;text-align:center;font-family:monospace;font-weight:bold;padding:0 2px;}');
+            printWindow.document.write('.chord-box{display:inline-block;min-width:2em;max-width:2.1em;text-align:center;font-family:monospace;font-weight:bold;padding:0 1px;margin-right:1px;vertical-align:middle;}');
             printWindow.document.write('</style></head><body>');
             printWindow.document.write(`<h1 style="text-align:center;">${name}${key?' - '+key:''}${time?' - '+time:''}</h1><hr>`);
             printWindow.document.write(outputContent);
