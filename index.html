@@ -23,7 +23,6 @@
         }
         .main-content {
             padding: 10px;
-            /* This buffer ensures the last line of text can scroll up from behind the toolbar */
             padding-bottom: 280px; 
         }
         h1 {
@@ -34,7 +33,6 @@
         }
         #inputTextArea {
             width: 100%;
-            /* REMOVED min-height to allow natural growth and page scrolling */
             font-family: 'Courier New', Courier, monospace;
             font-size: 1.1em;
             border: 1px solid var(--light-gray);
@@ -46,7 +44,6 @@
             line-height: 1.6;
             white-space: pre-wrap;
             overflow-wrap: break-word;
-            /* Added a minimum of 5 lines to start with */
             min-height: calc(1.6 * 1.1em * 5 + 24px); 
         }
         
@@ -235,7 +232,6 @@
         }
         
         function insertMusicUnit(note) {
-            inputTextArea.focus();
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
 
@@ -251,6 +247,10 @@
             unitSpan.innerHTML = formatNoteForDisplay(note);
 
             range.insertNode(unitSpan);
+            
+            // SCROLL FIX: Ensure the new element is visible
+            unitSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
             range.setStartAfter(unitSpan);
             range.collapse(true);
             
@@ -290,7 +290,9 @@
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
-                inputTextArea.focus();
+                
+                // SCROLL FIX: Ensure the modified element is visible
+                lastUnit.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         });
 
@@ -301,7 +303,6 @@
                 e.target.parentElement.classList.add('selected');
                 renderNoteButtons();
                 updateTransposition();
-                inputTextArea.focus();
             })
         );
 
@@ -310,7 +311,6 @@
                 insertionMode = e.target.value;
                 e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
                 e.target.parentElement.classList.add('selected');
-                inputTextArea.focus();
             })
         );
         
@@ -326,6 +326,7 @@
                 const newlineNode = document.createTextNode('\n');
                 range.insertNode(newlineNode);
 
+                // This range manipulation is enough to keep the view correct
                 range.setStartAfter(newlineNode);
                 range.collapse(true);
 
