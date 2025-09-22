@@ -137,7 +137,7 @@
     
     <div class="main-content">
         <h1>Chord Chart Editor</h1>
-        <div id="inputTextArea" contenteditable="true" spellcheck="false"></div>
+        <div id="inputTextArea" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off"></div>
     </div>
 
     <div class="fixed-toolbar">
@@ -298,6 +298,7 @@
                 e.target.parentElement.classList.add('selected');
                 renderNoteButtons();
                 updateTransposition();
+                inputTextArea.focus(); // KEYBOARD FIX: Refocus the editor
             })
         );
 
@@ -306,27 +307,25 @@
                 insertionMode = e.target.value;
                 e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
                 e.target.parentElement.classList.add('selected');
+                inputTextArea.focus(); // KEYBOARD FIX: Refocus the editor
             })
         );
 
-        // --- NEW & IMPROVED KEYBOARD FIX for ENTER and SPACE ---
+        // This listener now ONLY handles the Enter key, to ensure clean newlines.
+        // The double-space issue is handled by the autocorrect="off" attribute in the HTML.
         inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault(); // Stop the browser's default action completely
-
+            if (e.key === 'Enter') {
+                e.preventDefault();
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
 
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
 
-                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
-                const textNode = document.createTextNode(textToInsert);
-                
-                range.insertNode(textNode);
+                const newlineNode = document.createTextNode('\n');
+                range.insertNode(newlineNode);
 
-                // Manually move the cursor to after the inserted character
-                range.setStartAfter(textNode);
+                range.setStartAfter(newlineNode);
                 range.collapse(true);
 
                 selection.removeAllRanges();
@@ -340,4 +339,5 @@
         };
     </script>
 </body>
-</html>
+    </html>
+    
