@@ -24,7 +24,7 @@
         }
         .main-content {
             padding: 10px;
-            padding-bottom: 300px; 
+            /* The buffer space is now handled by the browser resizing the content */
         }
         h1 {
             font-family: 'Georgia', serif;
@@ -34,7 +34,7 @@
         }
         #inputTextArea {
             width: 100%;
-            min-height: 40vh;
+            min-height: 50vh; /* Increased height to make scrolling more apparent */
             font-family: 'Courier New', Courier, monospace;
             font-size: 1.1em;
             border: 1px solid var(--light-gray);
@@ -50,7 +50,8 @@
         
         .fixed-toolbar {
             position: fixed;
-            bottom: 0;
+            /* THIS IS THE NEW CSS FIX */
+            bottom: env(keyboard-inset-height, 0px);
             left: 0;
             right: 0;
             background: var(--toolbar-bg);
@@ -60,7 +61,7 @@
             flex-direction: column;
             gap: 8px;
             z-index: 1000;
-            transition: bottom 0.2s ease-in-out; /* Smooth transition for the toolbar */
+            transition: bottom 0.2s ease-in-out;
         }
         
         .controls-row {
@@ -168,7 +169,6 @@
         const semitoneValue = document.getElementById('semitoneValue');
         const noteButtonsContainer = document.getElementById('note-buttons-container');
         const chordButtonsContainer = document.getElementById('chord-buttons-container');
-        const fixedToolbar = document.querySelector('.fixed-toolbar');
 
         let semitones = 0;
         let accidentalPreference = 'sharp';
@@ -326,394 +326,9 @@
                 selection.addRange(range);
             }
         });
-
-        // --- NEW: VISUAL VIEWPORT API TO HANDLE KEYBOARD ---
-        function handleViewportResize() {
-            if (!window.visualViewport) {
-                return;
-            }
-            // The height of the area not covered by the keyboard
-            const viewportHeight = window.visualViewport.height;
-            // The total height of the window
-            const windowHeight = window.innerHeight;
-            // The difference is the height of the keyboard
-            const keyboardHeight = windowHeight - viewportHeight;
-            
-            if (keyboardHeight > 0) {
-                // If keyboard is visible, lift the toolbar
-                fixedToolbar.style.bottom = `${keyboardHeight}px`;
-            } else {
-                // Otherwise, reset it
-                fixedToolbar.style.bottom = '0px';
-            }
-        }
         
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleViewportResize);
-        }
-
-
-        window.onload = () => {
-            renderNoteButtons();
-            renderChordButtons();
-        };
-    </script>
-</body>
-    </html>
-            <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
-    <title>JMS Chord Chart Editor</title>
-    <style>
-        :root {
-            --primary-color: #3498db;
-            --secondary-color: #2c3e50;
-            --light-gray: #bdc3c7;
-            --bg-color: #f4f4f9;
-            --toolbar-bg: #eef2f5;
-        }
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--secondary-color);
-        }
-        .main-content {
-            padding: 10px;
-            padding-bottom: 300px; 
-        }
-        h1 {
-            font-family: 'Georgia', serif;
-            font-size: 1.5em;
-            text-align: center;
-            margin: 0 0 15px 0;
-        }
-        #inputTextArea {
-            width: 100%;
-            min-height: 40vh;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 1.1em;
-            border: 1px solid var(--light-gray);
-            padding: 12px;
-            border-radius: 6px;
-            outline: none;
-            box-sizing: border-box;
-            background: #fff;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-        }
-        
-        .fixed-toolbar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--toolbar-bg);
-            border-top: 1px solid var(--light-gray);
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 1000;
-            transition: bottom 0.2s ease-in-out; /* Smooth transition for the toolbar */
-        }
-        
-        .controls-row {
-            display: flex;
-            gap: 8px;
-            justify-content: space-around;
-        }
-        .radio-button-group {
-            display: flex;
-            flex: 1;
-            gap: 5px;
-        }
-        .radio-button {
-            flex: 1;
-            text-align: center;
-            padding: 6px;
-            font-size: 0.85em;
-            border: 2px solid var(--primary-color);
-            background: white;
-            color: var(--primary-color);
-            border-radius: 5px;
-            cursor: pointer;
-            user-select: none;
-        }
-        .radio-button.selected {
-            background: var(--primary-color);
-            color: white;
-        }
-        input[type="radio"] { display: none; }
-
-        .controls { display: flex; gap: 10px; }
-        .controls button, .controls input { flex: 1; }
-        
-        #note-buttons-container, #chord-buttons-container {
-            display: grid;
-            gap: 5px;
-        }
-        #note-buttons-container { grid-template-columns: repeat(6, 1fr); }
-        #chord-buttons-container { grid-template-columns: repeat(5, 1fr); }
-        
-        .note-btn, .chord-btn {
-            background: #fff;
-            color: var(--secondary-color);
-            border: 1px solid var(--light-gray);
-            border-radius: 5px;
-            padding: 8px 5px;
-            font-family: monospace;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-        }
-        
-        .music-unit { display: inline; white-space: nowrap; user-select: none; }
-        input[type="text"] {
-            border: 1px solid var(--light-gray);
-            border-radius: 4px;
-            font-size: 1em;
-        }
-        button {
-            background: var(--primary-color);
-            color: white;
-            padding: 8px;
-            font-size: 0.95em;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .blue-notes { color: #1e90ff; font-weight: bold; }
-        .red-chords { color: #e74c3c; font-weight: bold; }
-        .sharp, .flat { font-size: 0.75em; vertical-align: super; }
-    </style>
-</head>
-<body>
-    
-    <div class="main-content">
-        <h1>Chord Chart Editor</h1>
-        <div id="inputTextArea" contenteditable="true" spellcheck="false"></div>
-    </div>
-
-    <div class="fixed-toolbar">
-        <div class="controls-row">
-            <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
-                <label class="radio-button selected"><input type="radio" name="accidental" value="sharp" checked />Sharps (#)</label>
-                <label class="radio-button"><input type="radio" name="accidental" value="flat" />Flats (b)</label>
-            </div>
-            <div class="radio-button-group" role="radiogroup" aria-label="Mode">
-                <label class="radio-button selected"><input type="radio" name="insertionMode" value="notes" checked />Note</label>
-                <label class="radio-button"><input type="radio" name="insertionMode" value="chords" />Chord</label>
-            </div>
-        </div>
-        <div class="controls">
-            <button id="transposeMinus">-</button>
-            <input type="text" id="semitoneValue" value="0" readonly style="text-align:center; font-weight: bold;" />
-            <button id="transposePlus">+</button>
-            <button id="resetButton">Reset</button>
-        </div>
-        
-        <div id="note-buttons-container"></div>
-        <div id="chord-buttons-container"></div>
-    </div>
-
-    <script>
-        const inputTextArea = document.getElementById('inputTextArea');
-        const semitoneValue = document.getElementById('semitoneValue');
-        const noteButtonsContainer = document.getElementById('note-buttons-container');
-        const chordButtonsContainer = document.getElementById('chord-buttons-container');
-        const fixedToolbar = document.querySelector('.fixed-toolbar');
-
-        let semitones = 0;
-        let accidentalPreference = 'sharp';
-        let insertionMode = 'notes';
-
-        const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-        const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
-
-        function noteIndex(note) {
-            return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note);
-        }
-
-        function transposeNote(note, shift) {
-            const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
-            const idx = noteIndex(note);
-            if (idx === -1) return note;
-            return notes[(idx + shift + 12) % 12];
-        }
-        
-        function updateTransposition() {
-            semitoneValue.value = semitones;
-            inputTextArea.querySelectorAll('.music-unit').forEach(unit => {
-                const originalNote = unit.dataset.originalNote;
-                const originalExtension = unit.dataset.originalExtension || '';
-                if (originalNote) {
-                    const transposedNote = transposeNote(originalNote, semitones);
-                    unit.innerHTML = formatNoteForDisplay(transposedNote) + originalExtension;
-                }
-            });
-        }
-        
-        function formatNoteForDisplay(note) {
-            if (note.length > 1) {
-                const accidental = note.slice(1);
-                const accidentalClass = accidental === '#' ? 'sharp' : 'flat';
-                return `${note.charAt(0)}<span class="${accidentalClass}">${accidental}</span>`;
-            }
-            return note;
-        }
-        
-        function renderNoteButtons() {
-            noteButtonsContainer.innerHTML = '';
-            const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
-            notes.forEach(note => {
-                const btn = document.createElement('button');
-                btn.className = 'note-btn';
-                btn.innerHTML = formatNoteForDisplay(note);
-                btn.dataset.note = note;
-                noteButtonsContainer.appendChild(btn);
-            });
-        }
-
-        function renderChordButtons() {
-            chordButtonsContainer.innerHTML = '';
-            chordExtensions.forEach(ext => {
-                const btn = document.createElement('button');
-                btn.className = 'chord-btn';
-                btn.textContent = ext;
-                btn.dataset.ext = ext;
-                chordButtonsContainer.appendChild(btn);
-            });
-        }
-        
-        function insertMusicUnit(note) {
-            inputTextArea.focus();
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-
-            const colorClass = insertionMode === 'notes' ? 'blue-notes' : 'red-chords';
-            const unitSpan = document.createElement('span');
-            unitSpan.className = `music-unit ${colorClass}`;
-            unitSpan.dataset.originalNote = note;
-            unitSpan.dataset.originalExtension = '';
-            unitSpan.contentEditable = false;
-            unitSpan.innerHTML = formatNoteForDisplay(note);
-
-            range.insertNode(unitSpan);
-            range.setStartAfter(unitSpan);
-            range.collapse(true);
-            
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-
-        document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
-        document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
-        document.getElementById('resetButton').addEventListener('click', () => { semitones = 0; updateTransposition(); });
-
-        noteButtonsContainer.addEventListener('click', (e) => {
-            const btn = e.target.closest('.note-btn');
-            if (btn) insertMusicUnit(btn.dataset.note);
-        });
-        
-        chordButtonsContainer.addEventListener('click', (e) => {
-            const btn = e.target.closest('.chord-btn');
-            if (!btn) return;
-            
-            const ext = btn.dataset.ext;
-            const selection = window.getSelection();
-            if (!selection.rangeCount || !selection.anchorNode) return;
-
-            let node = selection.anchorNode;
-            let offset = selection.anchorOffset;
-            let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.previousSibling : node.childNodes[offset - 1];
-            let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
-            
-            if (lastUnit) {
-                const note = lastUnit.dataset.originalNote;
-                const newExt = (lastUnit.dataset.originalExtension || '') + ext;
-                
-                lastUnit.classList.remove('blue-notes');
-                lastUnit.classList.add('red-chords');
-                
-                lastUnit.dataset.originalExtension = newExt;
-                const transposedNote = transposeNote(note, semitones);
-                lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
-                inputTextArea.focus();
-            }
-        });
-
-        document.querySelectorAll('input[name="accidental"]').forEach(radio =>
-            radio.addEventListener('change', (e) => {
-                accidentalPreference = e.target.value;
-                e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
-                e.target.parentElement.classList.add('selected');
-                renderNoteButtons();
-                updateTransposition();
-            })
-        );
-
-        document.querySelectorAll('input[name="insertionMode"]').forEach(radio =>
-            radio.addEventListener('change', (e) => {
-                insertionMode = e.target.value;
-                e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
-                e.target.parentElement.classList.add('selected');
-            })
-        );
-
-        inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === ' ') {
-                e.preventDefault();
-                const selection = window.getSelection();
-                if (!selection.rangeCount) return;
-                const range = selection.getRangeAt(0);
-                range.deleteContents();
-                const spaceNode = document.createTextNode(' ');
-                range.insertNode(spaceNode);
-                range.setStartAfter(spaceNode);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        });
-
-        // --- NEW: VISUAL VIEWPORT API TO HANDLE KEYBOARD ---
-        function handleViewportResize() {
-            if (!window.visualViewport) {
-                return;
-            }
-            // The height of the area not covered by the keyboard
-            const viewportHeight = window.visualViewport.height;
-            // The total height of the window
-            const windowHeight = window.innerHeight;
-            // The difference is the height of the keyboard
-            const keyboardHeight = windowHeight - viewportHeight;
-            
-            if (keyboardHeight > 0) {
-                // If keyboard is visible, lift the toolbar
-                fixedToolbar.style.bottom = `${keyboardHeight}px`;
-            } else {
-                // Otherwise, reset it
-                fixedToolbar.style.bottom = '0px';
-            }
-        }
-        
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleViewportResize);
-        }
-
+        // --- JAVASCRIPT FOR KEYBOARD FIX HAS BEEN REMOVED ---
+        // The meta tag and CSS now handle this automatically.
 
         window.onload = () => {
             renderNoteButtons();
