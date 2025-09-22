@@ -15,7 +15,6 @@
         html, body {
             margin: 0;
             padding: 0;
-            height: 100%;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -24,6 +23,8 @@
         }
         .main-content {
             padding: 10px;
+            /* This buffer ensures the last line of text can scroll up from behind the toolbar */
+            padding-bottom: 280px; 
         }
         h1 {
             font-family: 'Georgia', serif;
@@ -33,7 +34,7 @@
         }
         #inputTextArea {
             width: 100%;
-            min-height: 50vh;
+            /* REMOVED min-height to allow natural growth and page scrolling */
             font-family: 'Courier New', Courier, monospace;
             font-size: 1.1em;
             border: 1px solid var(--light-gray);
@@ -45,6 +46,8 @@
             line-height: 1.6;
             white-space: pre-wrap;
             overflow-wrap: break-word;
+            /* Added a minimum of 5 lines to start with */
+            min-height: calc(1.6 * 1.1em * 5 + 24px); 
         }
         
         .fixed-toolbar {
@@ -298,7 +301,7 @@
                 e.target.parentElement.classList.add('selected');
                 renderNoteButtons();
                 updateTransposition();
-                inputTextArea.focus(); // KEYBOARD FIX: Refocus the editor
+                inputTextArea.focus();
             })
         );
 
@@ -307,12 +310,10 @@
                 insertionMode = e.target.value;
                 e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
                 e.target.parentElement.classList.add('selected');
-                inputTextArea.focus(); // KEYBOARD FIX: Refocus the editor
+                inputTextArea.focus();
             })
         );
-
-        // This listener now ONLY handles the Enter key, to ensure clean newlines.
-        // The double-space issue is handled by the autocorrect="off" attribute in the HTML.
+        
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
