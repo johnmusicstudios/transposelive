@@ -24,7 +24,6 @@
         }
         .main-content {
             padding: 10px;
-            /* The buffer space is now handled by the browser resizing the content */
         }
         h1 {
             font-family: 'Georgia', serif;
@@ -34,7 +33,7 @@
         }
         #inputTextArea {
             width: 100%;
-            min-height: 50vh; /* Increased height to make scrolling more apparent */
+            min-height: 50vh;
             font-family: 'Courier New', Courier, monospace;
             font-size: 1.1em;
             border: 1px solid var(--light-gray);
@@ -50,7 +49,6 @@
         
         .fixed-toolbar {
             position: fixed;
-            /* THIS IS THE NEW CSS FIX */
             bottom: env(keyboard-inset-height, 0px);
             left: 0;
             right: 0;
@@ -311,24 +309,30 @@
             })
         );
 
+        // --- NEW & IMPROVED KEYBOARD FIX for ENTER and SPACE ---
         inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === ' ') {
-                e.preventDefault();
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault(); // Stop the browser's default action completely
+
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
+
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
-                const spaceNode = document.createTextNode(' ');
-                range.insertNode(spaceNode);
-                range.setStartAfter(spaceNode);
+
+                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
+                const textNode = document.createTextNode(textToInsert);
+                
+                range.insertNode(textNode);
+
+                // Manually move the cursor to after the inserted character
+                range.setStartAfter(textNode);
                 range.collapse(true);
+
                 selection.removeAllRanges();
                 selection.addRange(range);
             }
         });
-        
-        // --- JAVASCRIPT FOR KEYBOARD FIX HAS BEEN REMOVED ---
-        // The meta tag and CSS now handle this automatically.
 
         window.onload = () => {
             renderNoteButtons();
@@ -336,5 +340,4 @@
         };
     </script>
 </body>
-    </html>
-    
+</html>
