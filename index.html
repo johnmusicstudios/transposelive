@@ -65,23 +65,27 @@
         .controls { display: flex; gap: 10px; }
         .controls button, .controls input { flex: 1; }
 
-        .button-grid {
-            display: flex;
-            flex-wrap: wrap;
+        /* --- UPDATED: Button Grid Styles --- */
+        #note-buttons-container, #chord-buttons-container {
+            display: grid;
             gap: 5px;
-            justify-content: center;
+        }
+        #note-buttons-container {
+            grid-template-columns: repeat(6, 1fr); /* 6x2 grid for notes */
+        }
+        #chord-buttons-container {
+            grid-template-columns: repeat(5, 1fr); /* 5x2 grid for chords */
         }
         .note-btn, .chord-btn {
             background: #fff;
             color: var(--secondary-color);
             border: 1px solid var(--light-gray);
             border-radius: 5px;
-            padding: 6px 8px;
+            padding: 8px 5px; /* Adjusted padding */
             font-family: monospace;
             font-size: 1em;
             font-weight: bold;
             cursor: pointer;
-            min-width: 38px;
             text-align: center;
             transition: background-color 0.2s;
         }
@@ -90,7 +94,7 @@
         #inputTextArea {
             width: 100%;
             min-height: 250px;
-            font-family: 'Courier New', Courier, monospace; /* MONOSPACED FONT IS KEY */
+            font-family: 'Courier New', Courier, monospace;
             font-size: 1.1em;
             border: 1px solid var(--light-gray);
             padding: 12px;
@@ -99,7 +103,7 @@
             box-sizing: border-box;
             background: #fff;
             line-height: 1.6;
-            white-space: pre-wrap; /* Allows wrapping but preserves spaces */
+            white-space: pre-wrap;
             overflow-wrap: break-word;
         }
         
@@ -152,8 +156,8 @@
             <button id="resetButton">Reset</button>
         </div>
         
-        <div id="note-buttons-container" class="button-grid"></div>
-        <div id="chord-buttons-container" class="button-grid"></div>
+        <div id="note-buttons-container"></div>
+        <div id="chord-buttons-container"></div>
 
         <div id="inputTextArea" contenteditable="true" spellcheck="false"></div>
 
@@ -227,16 +231,14 @@
             });
         }
         
-        // --- !!! CURSOR BEHAVIOR IS FIXED HERE !!! ---
         function insertMusicUnit(note) {
             inputTextArea.focus();
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
 
             const range = selection.getRangeAt(0);
-            range.deleteContents(); // Clear selection if any
+            range.deleteContents();
 
-            // Create the span as a DOM node
             const colorClass = insertionMode === 'notes' ? 'blue-notes' : 'red-chords';
             const unitSpan = document.createElement('span');
             unitSpan.className = `music-unit ${colorClass}`;
@@ -245,13 +247,12 @@
             unitSpan.contentEditable = false;
             unitSpan.innerHTML = formatNoteForDisplay(note);
 
-            // Insert the node and manually move the cursor
             range.insertNode(unitSpan);
-            range.setStartAfter(unitSpan); // Move range start after the new node
-            range.collapse(true); // Collapse range to its start point
+            range.setStartAfter(unitSpan);
+            range.collapse(true);
             
-            selection.removeAllRanges(); // Remove old selection
-            selection.addRange(range); // Add new selection, effectively moving the cursor
+            selection.removeAllRanges();
+            selection.addRange(range);
         }
 
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
@@ -271,10 +272,9 @@
             const selection = window.getSelection();
             if (!selection.rangeCount || !selection.anchorNode) return;
 
-            // Find the music-unit immediately preceding the cursor
             let node = selection.anchorNode;
             let offset = selection.anchorOffset;
-            let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.textContent.charAt(offset - 1) : node.childNodes[offset - 1];
+            let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.previousSibling : node.childNodes[offset - 1];
             let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
             
             if (lastUnit) {
@@ -287,6 +287,8 @@
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
+
+                inputTextArea.focus(); // KEYBOARD FIX: Refocus the editor
             }
         });
 
@@ -307,6 +309,14 @@
                 e.target.parentElement.classList.add('selected');
             })
         );
+
+        // KEYBOARD FIX: Prevents keyboard collapse on double space
+        inputTextArea.addEventListener('keydown', (e) => {
+            if (e.key === ' ' && window.getSelection().anchorNode.textContent.slice(window.getSelection().anchorOffset - 1, window.getSelection().anchorOffset) === ' ') {
+                e.preventDefault();
+                document.execCommand('insertText', false, ' ');
+            }
+        });
 
         window.onload = () => {
             renderNoteButtons();
