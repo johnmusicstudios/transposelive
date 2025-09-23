@@ -76,7 +76,7 @@
             flex: 1;
             text-align: center;
             padding: 8px;
-            font-size: 1.1em; /* Increased size for symbols */
+            font-size: 1.1em;
             font-weight: bold;
             border: 2px solid var(--primary-color);
             background: white;
@@ -102,7 +102,10 @@
             gap: 5px;
         }
         #note-buttons-container { grid-template-columns: repeat(6, 1fr); }
-        #chord-buttons-container { grid-template-columns: repeat(5, 1fr); }
+        #chord-buttons-container {
+            grid-template-columns: repeat(5, 1fr);
+            display: none; /* Hidden by default */
+        }
         
         .note-btn, .chord-btn {
             background: #fff;
@@ -129,7 +132,7 @@
             background: var(--primary-color);
             color: white;
             padding: 8px;
-            font-size: 1.2em; /* Increased size for symbols */
+            font-size: 1.2em;
             border: none;
             border-radius: 4px;
             cursor: pointer;
@@ -346,6 +349,14 @@
                 insertionMode = e.target.value;
                 e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
                 e.target.parentElement.classList.add('selected');
+                
+                // NEW: Show/hide chord extensions based on mode
+                if (insertionMode === 'chords') {
+                    chordButtonsContainer.style.display = 'grid';
+                } else {
+                    chordButtonsContainer.style.display = 'none';
+                }
+
                 inputTextArea.focus({ preventScroll: true });
             })
         );
@@ -402,6 +413,12 @@
                     document.querySelector(`input[name="insertionMode"][value="${insertionMode}"]`).checked = true;
                     document.querySelectorAll('input[name="insertionMode"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
                     renderNoteButtons();
+                    // Update chord button visibility based on loaded state
+                    if (insertionMode === 'chords') {
+                        chordButtonsContainer.style.display = 'grid';
+                    } else {
+                        chordButtonsContainer.style.display = 'none';
+                    }
                 } catch (err) { alert("Error: Could not open the file."); }
             };
             reader.readAsText(file);
