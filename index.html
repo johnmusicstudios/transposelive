@@ -176,9 +176,7 @@
         const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
 
-        function noteIndex(note) {
-            return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note);
-        }
+        function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
 
         function transposeNote(note, shift) {
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
@@ -254,14 +252,26 @@
             selection.removeAllRanges();
             selection.addRange(range);
 
-            // SCROLL FIX: This is the final step to ensure visibility
-            inputTextArea.focus({ preventScroll: true });
             unitSpan.scrollIntoView({ block: 'nearest' });
         }
 
-        document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
-        document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
-        document.getElementById('resetButton').addEventListener('click', () => { semitones = 0; updateTransposition(); });
+        // --- Event Listeners with Consistent Focus & Scroll Handling ---
+
+        document.getElementById('transposeMinus').addEventListener('click', () => {
+            if (semitones > -12) semitones--;
+            updateTransposition();
+            inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
+        });
+        document.getElementById('transposePlus').addEventListener('click', () => {
+            if (semitones < 12) semitones++;
+            updateTransposition();
+            inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
+        });
+        document.getElementById('resetButton').addEventListener('click', () => {
+            semitones = 0;
+            updateTransposition();
+            inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
+        });
 
         noteButtonsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.note-btn');
@@ -292,7 +302,6 @@
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 
-                // SCROLL FIX: Ensure focus without jumping, then scroll element into view
                 inputTextArea.focus({ preventScroll: true });
                 lastUnit.scrollIntoView({ block: 'nearest' });
             }
@@ -319,7 +328,7 @@
         );
         
         inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
@@ -327,10 +336,12 @@
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
 
-                const newlineNode = document.createTextNode('\n');
-                range.insertNode(newlineNode);
+                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
+                const textNode = document.createTextNode(textToInsert);
+                
+                range.insertNode(textNode);
 
-                range.setStartAfter(newlineNode);
+                range.setStartAfter(textNode);
                 range.collapse(true);
 
                 selection.removeAllRanges();
