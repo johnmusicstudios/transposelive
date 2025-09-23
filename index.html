@@ -75,14 +75,18 @@
         .radio-button {
             flex: 1;
             text-align: center;
-            padding: 6px;
-            font-size: 0.85em;
+            padding: 8px;
+            font-size: 1.1em; /* Increased size for symbols */
+            font-weight: bold;
             border: 2px solid var(--primary-color);
             background: white;
             color: var(--primary-color);
             border-radius: 5px;
             cursor: pointer;
             user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .radio-button.selected {
             background: var(--primary-color);
@@ -118,15 +122,20 @@
             border: 1px solid var(--light-gray);
             border-radius: 4px;
             font-size: 1em;
+            text-align: center;
+            font-weight: bold;
         }
         button {
             background: var(--primary-color);
             color: white;
             padding: 8px;
-            font-size: 0.95em;
+            font-size: 1.2em; /* Increased size for symbols */
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #saveBtn { background-color: #27ae60; }
         #openBtn { background-color: #f39c12; }
@@ -135,7 +144,6 @@
         .red-chords { color: #e74c3c; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
 
-        /* --- NEW: View/Edit Mode Styles --- */
         .mode-toggle-container {
             display: flex;
             gap: 5px;
@@ -169,15 +177,15 @@
 
     <div class="fixed-toolbar">
         <div class="mode-toggle-container">
-            <button id="viewModeBtn">👓 View</button>
-            <button id="editModeBtn" class="active">✏️ Edit</button>
+            <button id="viewModeBtn" title="View Mode">👁️</button>
+            <button id="editModeBtn" class="active" title="Edit Mode">✏️</button>
         </div>
         
         <div id="editControlsWrapper">
             <div class="controls-row">
                 <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
-                    <label class="radio-button selected"><input type="radio" name="accidental" value="sharp" checked />Sharps (#)</label>
-                    <label class="radio-button"><input type="radio" name="accidental" value="flat" />Flats (b)</label>
+                    <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
+                    <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
                 </div>
                 <div class="radio-button-group" role="radiogroup" aria-label="Mode">
                     <label class="radio-button selected"><input type="radio" name="insertionMode" value="notes" checked />Note</label>
@@ -189,15 +197,15 @@
         </div>
 
         <div class="controls">
-            <button id="transposeMinus">-</button>
-            <input type="text" id="semitoneValue" value="0" readonly style="text-align:center; font-weight: bold;" />
-            <button id="transposePlus">+</button>
-            <button id="resetButton">Reset</button>
+            <button id="transposeMinus" title="Transpose Down">-</button>
+            <input type="text" id="semitoneValue" value="0" readonly />
+            <button id="transposePlus" title="Transpose Up">+</button>
+            <button id="resetButton" title="Reset Transposition">🔄</button>
         </div>
         
         <div class="controls">
-            <button id="saveBtn">💾 Save</button>
-            <button id="openBtn">📂 Open</button>
+            <button id="saveBtn" title="Save">💾</button>
+            <button id="openBtn" title="Open">📂</button>
             <input type="file" id="fileInput" accept=".jms" style="display: none;" />
         </div>
     </div>
@@ -362,12 +370,7 @@
         saveBtn.addEventListener('click', () => {
             const filename = prompt("Enter a name for your song:", "my-song.jms");
             if (!filename) return;
-            const state = {
-                contentHTML: inputTextArea.innerHTML,
-                semitones: semitones,
-                accidentalPreference: accidentalPreference,
-                insertionMode: insertionMode,
-            };
+            const state = { contentHTML: inputTextArea.innerHTML, semitones: semitones, accidentalPreference: accidentalPreference, insertionMode: insertionMode, };
             const fileContent = JSON.stringify(state, null, 2);
             const blob = new Blob([fileContent], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -395,23 +398,16 @@
                     insertionMode = state.insertionMode || 'notes';
                     semitoneValue.value = semitones;
                     document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
-                    document.querySelectorAll('input[name="accidental"]').forEach(r => {
-                        r.parentElement.classList.toggle('selected', r.checked);
-                    });
+                    document.querySelectorAll('input[name="accidental"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
                     document.querySelector(`input[name="insertionMode"][value="${insertionMode}"]`).checked = true;
-                    document.querySelectorAll('input[name="insertionMode"]').forEach(r => {
-                        r.parentElement.classList.toggle('selected', r.checked);
-                    });
+                    document.querySelectorAll('input[name="insertionMode"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
                     renderNoteButtons();
-                } catch (err) {
-                    alert("Error: Could not open the file. It may be invalid or corrupted.");
-                }
+                } catch (err) { alert("Error: Could not open the file."); }
             };
             reader.readAsText(file);
             e.target.value = null;
         });
 
-        // --- NEW: View/Edit Mode Logic ---
         viewModeBtn.addEventListener('click', () => {
             document.body.classList.add('view-mode');
             viewModeBtn.classList.add('active');
