@@ -12,38 +12,38 @@
             --bg-color: #f4f4f9;
             --toolbar-bg: #eef2f5;
         }
-        html {
+        html, body {
+            margin: 0;
+            padding: 0;
             height: 100%;
+            overflow: hidden;
         }
         body {
             height: 100vh; /* Use viewport height */
             height: 100dvh; /* Use dynamic viewport height for mobile keyboard resilience */
-            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--secondary-color);
-            /* --- NEW FLEXBOX LAYOUT --- */
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Prevent body from scrolling */
         }
         .main-content {
-            flex-grow: 1; /* Allows this section to fill available space */
+            flex-grow: 1;
             padding: 10px;
             padding-bottom: 0;
             display: flex;
             flex-direction: column;
-            min-height: 0; /* Fix for flexbox overflow bug */
+            min-height: 0;
         }
         h1 {
             font-family: 'Georgia', serif;
             font-size: 1.5em;
             text-align: center;
             margin: 0 0 15px 0;
-            flex-shrink: 0; /* Prevent h1 from shrinking */
+            flex-shrink: 0;
         }
         #inputTextArea {
-            flex-grow: 1; /* Allows textarea to fill the main-content area */
+            flex-grow: 1;
             width: 100%;
             font-family: 'Courier New', Courier, monospace;
             font-size: 1.1em;
@@ -56,11 +56,11 @@
             line-height: 1.6;
             white-space: pre-wrap;
             overflow-wrap: break-word;
-            overflow-y: auto; /* The textarea itself will now scroll */
+            overflow-y: auto;
         }
         
-        .toolbar { /* Renamed from fixed-toolbar */
-            flex-shrink: 0; /* Prevent toolbar from shrinking */
+        .toolbar {
+            flex-shrink: 0;
             background: var(--toolbar-bg);
             border-top: 1px solid var(--light-gray);
             padding: 8px;
@@ -105,14 +105,26 @@
         .controls { display: flex; gap: 10px; }
         .controls button, .controls input { flex: 1; }
         
+        /* --- NEW: Horizontally Scrolling Button Containers --- */
         #note-buttons-container, #chord-buttons-container {
-            display: grid;
+            display: flex;
+            flex-wrap: nowrap; /* Prevents wrapping to a new line */
+            overflow-x: auto; /* Enables horizontal scrolling */
             gap: 5px;
+            padding-bottom: 5px; /* Add some padding for the scrollbar */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
         }
-        #note-buttons-container { grid-template-columns: repeat(6, 1fr); }
-        #chord-buttons-container {
-            grid-template-columns: repeat(5, 1fr);
+        /* Hide scrollbar for a cleaner look */
+        #note-buttons-container::-webkit-scrollbar, #chord-buttons-container::-webkit-scrollbar {
             display: none;
+        }
+        #note-buttons-container, #chord-buttons-container {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        #chord-buttons-container {
+            display: none; /* Still hidden by default */
         }
         
         .note-btn, .chord-btn {
@@ -120,12 +132,14 @@
             color: var(--secondary-color);
             border: 1px solid var(--light-gray);
             border-radius: 5px;
-            padding: 8px 5px;
+            padding: 8px 10px;
             font-family: monospace;
             font-size: 1em;
             font-weight: bold;
             cursor: pointer;
             text-align: center;
+            flex-shrink: 0; /* Prevent buttons from shrinking */
+            min-width: 45px;
         }
         
         .music-unit { display: inline; white-space: nowrap; user-select: none; }
@@ -158,7 +172,6 @@
         .mode-toggle-container {
             display: flex;
             gap: 5px;
-            margin-bottom: 5px;
         }
         .mode-toggle-container button {
             flex: 1;
@@ -327,126 +340,4 @@
             let node = selection.anchorNode;
             let offset = selection.anchorOffset;
             let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.previousSibling : node.childNodes[offset - 1];
-            let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
-            if (lastUnit) {
-                const note = lastUnit.dataset.originalNote;
-                const newExt = (lastUnit.dataset.originalExtension || '') + ext;
-                lastUnit.classList.remove('blue-notes');
-                lastUnit.classList.add('red-chords');
-                lastUnit.dataset.originalExtension = newExt;
-                const transposedNote = transposeNote(note, semitones);
-                lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
-                inputTextArea.focus({ preventScroll: true });
-                lastUnit.scrollIntoView({ block: 'center', inline: 'nearest' });
-            }
-        });
-
-        document.querySelectorAll('input[name="accidental"]').forEach(radio =>
-            radio.addEventListener('change', (e) => {
-                accidentalPreference = e.target.value;
-                e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
-                e.target.parentElement.classList.add('selected');
-                renderNoteButtons();
-                updateTransposition();
-                inputTextArea.focus({ preventScroll: true });
-            })
-        );
-
-        document.querySelectorAll('input[name="insertionMode"]').forEach(radio =>
-            radio.addEventListener('change', (e) => {
-                insertionMode = e.target.value;
-                e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
-                e.target.parentElement.classList.add('selected');
-                if (insertionMode === 'chords') {
-                    chordButtonsContainer.style.display = 'grid';
-                } else {
-                    chordButtonsContainer.style.display = 'none';
-                }
-                inputTextArea.focus({ preventScroll: true });
-            })
-        );
-        
-        inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                const selection = window.getSelection();
-                if (!selection.rangeCount) return;
-                const range = selection.getRangeAt(0);
-                range.deleteContents();
-                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
-                const textNode = document.createTextNode(textToInsert);
-                range.insertNode(textNode);
-                range.setStartAfter(textNode);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        });
-
-        saveBtn.addEventListener('click', () => {
-            const filename = prompt("Enter a name for your song:", "my-song.jms");
-            if (!filename) return;
-            const state = { contentHTML: inputTextArea.innerHTML, semitones: semitones, accidentalPreference: accidentalPreference, insertionMode: insertionMode, };
-            const fileContent = JSON.stringify(state, null, 2);
-            const blob = new Blob([fileContent], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename.endsWith('.jms') ? filename : filename + '.jms';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-
-        openBtn.addEventListener('click', () => { fileInput.click(); });
-
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const state = JSON.parse(event.target.result);
-                    inputTextArea.innerHTML = state.contentHTML || '';
-                    semitones = state.semitones || 0;
-                    accidentalPreference = state.accidentalPreference || 'sharp';
-                    insertionMode = state.insertionMode || 'notes';
-                    semitoneValue.value = semitones;
-                    document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
-                    document.querySelectorAll('input[name="accidental"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
-                    document.querySelector(`input[name="insertionMode"][value="${insertionMode}"]`).checked = true;
-                    document.querySelectorAll('input[name="insertionMode"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
-                    renderNoteButtons();
-                    if (insertionMode === 'chords') {
-                        chordButtonsContainer.style.display = 'grid';
-                    } else {
-                        chordButtonsContainer.style.display = 'none';
-                    }
-                } catch (err) { alert("Error: Could not open the file."); }
-            };
-            reader.readAsText(file);
-            e.target.value = null;
-        });
-
-        viewModeBtn.addEventListener('click', () => {
-            document.body.classList.add('view-mode');
-            viewModeBtn.classList.add('active');
-            editModeBtn.classList.remove('active');
-            inputTextArea.contentEditable = false;
-        });
-
-        editModeBtn.addEventListener('click', () => {
-            document.body.classList.remove('view-mode');
-            editModeBtn.classList.add('active');
-            viewModeBtn.classList.remove('active');
-            inputTextArea.contentEditable = true;
-        });
-
-        window.onload = () => {
-            renderNoteButtons();
-            renderChordButtons();
-        };
-    </script>
-</body>
-</html>
+            let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE)
