@@ -23,9 +23,7 @@
         }
         .main-content {
             padding: 10px;
-            /* Start with a large buffer, will be adjusted in View Mode */
             padding-bottom: 320px; 
-            transition: padding-bottom 0.2s ease-in-out;
         }
         h1 {
             font-family: 'Georgia', serif;
@@ -62,6 +60,31 @@
             gap: 8px;
             z-index: 1000;
             transition: bottom 0.2s ease-in-out;
+        }
+        
+        /* --- NEW: Styles for Edit/View Toggle --- */
+        .mode-toggle-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            border: 2px solid var(--primary-color);
+            border-radius: 7px;
+            padding: 3px;
+        }
+        .mode-btn {
+            background-color: transparent;
+            color: var(--primary-color);
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+        }
+        .mode-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        /* This one rule hides all the edit-only controls */
+        .view-mode-active .edit-only {
+            display: none;
         }
         
         .controls-row {
@@ -130,27 +153,12 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        #modeToggleBtn { background-color: #8e44ad; } /* Purple for Mode Toggle */
+        #saveBtn { background-color: #27ae60; }
+        #openBtn { background-color: #f39c12; }
 
         .blue-notes { color: #1e90ff; font-weight: bold; }
         .red-chords { color: #e74c3c; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
-
-        /* --- NEW: View Mode Logic --- */
-        .view-mode #modeToggleBtn { background-color: #27ae60; } /* Green in View Mode */
-
-        /* These elements will be hidden when .view-mode is active */
-        .view-mode #topControls,
-        .view-mode #note-buttons-container,
-        .view-mode #chord-buttons-container {
-            display: none;
-        }
-
-        /* Reduce the bottom padding in view mode because the toolbar is shorter */
-        .view-mode .main-content {
-            padding-bottom: 100px;
-        }
-
     </style>
 </head>
 <body>
@@ -160,8 +168,13 @@
         <div id="inputTextArea" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off"></div>
     </div>
 
-    <div class="fixed-toolbar" id="toolbar">
-        <div class="controls-row" id="topControls">
+    <div class="fixed-toolbar">
+        <div class="mode-toggle-group">
+            <button id="editModeBtn" class="mode-btn active">Edit</button>
+            <button id="viewModeBtn" class="mode-btn">View</button>
+        </div>
+        
+        <div class="controls-row edit-only">
             <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
                 <label class="radio-button selected"><input type="radio" name="accidental" value="sharp" checked />Sharps (#)</label>
                 <label class="radio-button"><input type="radio" name="accidental" value="flat" />Flats (b)</label>
@@ -178,11 +191,13 @@
             <button id="resetButton">Reset</button>
         </div>
         
-        <div id="note-buttons-container"></div>
-        <div id="chord-buttons-container"></div>
-        
+        <div id="note-buttons-container" class="edit-only"></div>
+        <div id="chord-buttons-container" class="edit-only"></div>
+
         <div class="controls">
-            <button id="modeToggleBtn">🎤 View</button>
+            <button id="saveBtn">💾 Save</button>
+            <button id="openBtn">📂 Open</button>
+            <input type="file" id="fileInput" accept=".jms" style="display: none;" />
         </div>
     </div>
 
@@ -191,17 +206,34 @@
         const semitoneValue = document.getElementById('semitoneValue');
         const noteButtonsContainer = document.getElementById('note-buttons-container');
         const chordButtonsContainer = document.getElementById('chord-buttons-container');
-        const modeToggleBtn = document.getElementById('modeToggleBtn');
-        const toolbar = document.getElementById('toolbar');
-        const mainContent = document.querySelector('.main-content');
+        const saveBtn = document.getElementById('saveBtn');
+        const openBtn = document.getElementById('openBtn');
+        const fileInput = document.getElementById('fileInput');
+        const fixedToolbar = document.querySelector('.fixed-toolbar');
+        const editModeBtn = document.getElementById('editModeBtn');
+        const viewModeBtn = document.getElementById('viewModeBtn');
 
         let semitones = 0;
         let accidentalPreference = 'sharp';
         let insertionMode = 'notes';
 
-        const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-        const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
+        // --- Event Listeners for Edit/View Mode ---
+        editModeBtn.addEventListener('click', () => {
+            fixedToolbar.classList.remove('view-mode-active');
+            inputTextArea.contentEditable = true;
+            editModeBtn.classList.add('active');
+            viewModeBtn.classList.remove('active');
+            inputTextArea.focus({preventScroll: true});
+        });
+
+        viewModeBtn.addEventListener('click', () => {
+            fixedToolbar.classList.add('view-mode-active');
+            inputTextArea.contentEditable = false;
+            viewModeBtn.classList.add('active');
+            editModeBtn.classList.remove('active');
+        });
+
+        // --- Core Application Logic ---
 
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
 
@@ -341,17 +373,52 @@
             }
         });
 
-        // --- NEW: View/Edit Mode Toggle Logic ---
-        modeToggleBtn.addEventListener('click', () => {
-            // Toggle the .view-mode class on two elements
-            toolbar.classList.toggle('view-mode');
-            document.body.classList.toggle('view-mode'); // Also add to body for main-content padding
+        saveBtn.addEventListener('click', () => {
+            const filename = prompt("Enter a name for your song:", "my-song.jms");
+            if (!filename) return;
+            const state = {
+                contentHTML: inputTextArea.innerHTML,
+                semitones: semitones,
+                accidentalPreference: accidentalPreference,
+                insertionMode: insertionMode,
+            };
+            const fileContent = JSON.stringify(state, null, 2);
+            const blob = new Blob([fileContent], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename.endsWith('.jms') ? filename : filename + '.jms';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
 
-            if (toolbar.classList.contains('view-mode')) {
-                modeToggleBtn.innerHTML = '✍️ Edit';
-            } else {
-                modeToggleBtn.innerHTML = '🎤 View';
-            }
+        openBtn.addEventListener('click', () => { fileInput.click(); });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const state = JSON.parse(event.target.result);
+                    inputTextArea.innerHTML = state.contentHTML || '';
+                    semitones = state.semitones || 0;
+                    accidentalPreference = state.accidentalPreference || 'sharp';
+                    insertionMode = state.insertionMode || 'notes';
+                    semitoneValue.value = semitones;
+                    document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
+                    document.querySelectorAll('input[name="accidental"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
+                    document.querySelector(`input[name="insertionMode"][value="${insertionMode}"]`).checked = true;
+                    document.querySelectorAll('input[name="insertionMode"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
+                    renderNoteButtons();
+                } catch (err) {
+                    alert("Error: Could not open the file. It may be invalid or corrupted.");
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = null;
         });
 
         window.onload = () => {
