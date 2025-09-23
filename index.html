@@ -12,26 +12,38 @@
             --bg-color: #f4f4f9;
             --toolbar-bg: #eef2f5;
         }
-        html, body {
-            margin: 0;
-            padding: 0;
+        html {
+            height: 100%;
         }
         body {
+            height: 100vh; /* Use viewport height */
+            height: 100dvh; /* Use dynamic viewport height for mobile keyboard resilience */
+            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--secondary-color);
+            /* --- NEW FLEXBOX LAYOUT --- */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent body from scrolling */
         }
         .main-content {
+            flex-grow: 1; /* Allows this section to fill available space */
             padding: 10px;
-            padding-bottom: 300px; 
+            padding-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Fix for flexbox overflow bug */
         }
         h1 {
             font-family: 'Georgia', serif;
             font-size: 1.5em;
             text-align: center;
             margin: 0 0 15px 0;
+            flex-shrink: 0; /* Prevent h1 from shrinking */
         }
         #inputTextArea {
+            flex-grow: 1; /* Allows textarea to fill the main-content area */
             width: 100%;
             font-family: 'Courier New', Courier, monospace;
             font-size: 1.1em;
@@ -44,14 +56,11 @@
             line-height: 1.6;
             white-space: pre-wrap;
             overflow-wrap: break-word;
-            min-height: calc(1.6 * 1.1em * 5 + 24px); 
+            overflow-y: auto; /* The textarea itself will now scroll */
         }
         
-        .fixed-toolbar {
-            position: fixed;
-            bottom: env(keyboard-inset-height, 0px);
-            left: 0;
-            right: 0;
+        .toolbar { /* Renamed from fixed-toolbar */
+            flex-shrink: 0; /* Prevent toolbar from shrinking */
             background: var(--toolbar-bg);
             border-top: 1px solid var(--light-gray);
             padding: 8px;
@@ -59,7 +68,6 @@
             flex-direction: column;
             gap: 8px;
             z-index: 1000;
-            transition: bottom 0.2s ease-in-out;
         }
         
         .controls-row {
@@ -104,7 +112,7 @@
         #note-buttons-container { grid-template-columns: repeat(6, 1fr); }
         #chord-buttons-container {
             grid-template-columns: repeat(5, 1fr);
-            display: none; /* Hidden by default */
+            display: none;
         }
         
         .note-btn, .chord-btn {
@@ -178,7 +186,7 @@
         <div id="inputTextArea" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off"></div>
     </div>
 
-    <div class="fixed-toolbar">
+    <div class="toolbar">
         <div class="mode-toggle-container">
             <button id="viewModeBtn" title="View Mode">👁️</button>
             <button id="editModeBtn" class="active" title="Edit Mode">✏️</button>
@@ -349,14 +357,11 @@
                 insertionMode = e.target.value;
                 e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
                 e.target.parentElement.classList.add('selected');
-                
-                // NEW: Show/hide chord extensions based on mode
                 if (insertionMode === 'chords') {
                     chordButtonsContainer.style.display = 'grid';
                 } else {
                     chordButtonsContainer.style.display = 'none';
                 }
-
                 inputTextArea.focus({ preventScroll: true });
             })
         );
@@ -413,7 +418,6 @@
                     document.querySelector(`input[name="insertionMode"][value="${insertionMode}"]`).checked = true;
                     document.querySelectorAll('input[name="insertionMode"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
                     renderNoteButtons();
-                    // Update chord button visibility based on loaded state
                     if (insertionMode === 'chords') {
                         chordButtonsContainer.style.display = 'grid';
                     } else {
