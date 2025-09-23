@@ -23,7 +23,9 @@
         }
         .main-content {
             padding: 10px;
-            padding-bottom: 280px; 
+            /* Start with a large buffer, will be adjusted in View Mode */
+            padding-bottom: 320px; 
+            transition: padding-bottom 0.2s ease-in-out;
         }
         h1 {
             font-family: 'Georgia', serif;
@@ -128,9 +130,27 @@
             border-radius: 4px;
             cursor: pointer;
         }
+        #modeToggleBtn { background-color: #8e44ad; } /* Purple for Mode Toggle */
+
         .blue-notes { color: #1e90ff; font-weight: bold; }
         .red-chords { color: #e74c3c; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
+
+        /* --- NEW: View Mode Logic --- */
+        .view-mode #modeToggleBtn { background-color: #27ae60; } /* Green in View Mode */
+
+        /* These elements will be hidden when .view-mode is active */
+        .view-mode #topControls,
+        .view-mode #note-buttons-container,
+        .view-mode #chord-buttons-container {
+            display: none;
+        }
+
+        /* Reduce the bottom padding in view mode because the toolbar is shorter */
+        .view-mode .main-content {
+            padding-bottom: 100px;
+        }
+
     </style>
 </head>
 <body>
@@ -140,8 +160,8 @@
         <div id="inputTextArea" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off"></div>
     </div>
 
-    <div class="fixed-toolbar">
-        <div class="controls-row">
+    <div class="fixed-toolbar" id="toolbar">
+        <div class="controls-row" id="topControls">
             <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
                 <label class="radio-button selected"><input type="radio" name="accidental" value="sharp" checked />Sharps (#)</label>
                 <label class="radio-button"><input type="radio" name="accidental" value="flat" />Flats (b)</label>
@@ -160,6 +180,10 @@
         
         <div id="note-buttons-container"></div>
         <div id="chord-buttons-container"></div>
+        
+        <div class="controls">
+            <button id="modeToggleBtn">🎤 View</button>
+        </div>
     </div>
 
     <script>
@@ -167,6 +191,9 @@
         const semitoneValue = document.getElementById('semitoneValue');
         const noteButtonsContainer = document.getElementById('note-buttons-container');
         const chordButtonsContainer = document.getElementById('chord-buttons-container');
+        const modeToggleBtn = document.getElementById('modeToggleBtn');
+        const toolbar = document.getElementById('toolbar');
+        const mainContent = document.querySelector('.main-content');
 
         let semitones = 0;
         let accidentalPreference = 'sharp';
@@ -232,10 +259,8 @@
         function insertMusicUnit(note) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
-
             const range = selection.getRangeAt(0);
             range.deleteContents();
-
             const colorClass = insertionMode === 'notes' ? 'blue-notes' : 'red-chords';
             const unitSpan = document.createElement('span');
             unitSpan.className = `music-unit ${colorClass}`;
@@ -243,64 +268,37 @@
             unitSpan.dataset.originalExtension = '';
             unitSpan.contentEditable = false;
             unitSpan.innerHTML = formatNoteForDisplay(note);
-
             range.insertNode(unitSpan);
             range.setStartAfter(unitSpan);
             range.collapse(true);
-            
             selection.removeAllRanges();
             selection.addRange(range);
-            
-            // This command is the key to keeping the current line visible
             unitSpan.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
 
-        document.getElementById('transposeMinus').addEventListener('click', () => {
-            if (semitones > -12) semitones--;
-            updateTransposition();
-            inputTextArea.focus({ preventScroll: true });
-        });
-        document.getElementById('transposePlus').addEventListener('click', () => {
-            if (semitones < 12) semitones++;
-            updateTransposition();
-            inputTextArea.focus({ preventScroll: true });
-        });
-        document.getElementById('resetButton').addEventListener('click', () => {
-            semitones = 0;
-            updateTransposition();
-            inputTextArea.focus({ preventScroll: true });
-        });
-
-        noteButtonsContainer.addEventListener('click', (e) => {
-            const btn = e.target.closest('.note-btn');
-            if (btn) insertMusicUnit(btn.dataset.note);
-        });
+        document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
+        document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
+        document.getElementById('resetButton').addEventListener('click', () => { semitones = 0; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
+        noteButtonsContainer.addEventListener('click', (e) => { const btn = e.target.closest('.note-btn'); if (btn) insertMusicUnit(btn.dataset.note); });
         
         chordButtonsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.chord-btn');
             if (!btn) return;
-            
             const ext = btn.dataset.ext;
             const selection = window.getSelection();
             if (!selection.rangeCount || !selection.anchorNode) return;
-
             let node = selection.anchorNode;
             let offset = selection.anchorOffset;
             let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.previousSibling : node.childNodes[offset - 1];
             let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
-            
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
-                
                 lastUnit.classList.remove('blue-notes');
                 lastUnit.classList.add('red-chords');
-                
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
-                
-                // Keep focus without scrolling, then ensure the element is visible
                 inputTextArea.focus({ preventScroll: true });
                 lastUnit.scrollIntoView({ block: 'center', inline: 'nearest' });
             }
@@ -326,26 +324,33 @@
             })
         );
         
-        // This listener now reliably handles BOTH Enter and Space
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
-
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
-
                 const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
                 const textNode = document.createTextNode(textToInsert);
-                
                 range.insertNode(textNode);
-
                 range.setStartAfter(textNode);
                 range.collapse(true);
-
                 selection.removeAllRanges();
                 selection.addRange(range);
+            }
+        });
+
+        // --- NEW: View/Edit Mode Toggle Logic ---
+        modeToggleBtn.addEventListener('click', () => {
+            // Toggle the .view-mode class on two elements
+            toolbar.classList.toggle('view-mode');
+            document.body.classList.toggle('view-mode'); // Also add to body for main-content padding
+
+            if (toolbar.classList.contains('view-mode')) {
+                modeToggleBtn.innerHTML = '✍️ Edit';
+            } else {
+                modeToggleBtn.innerHTML = '🎤 View';
             }
         });
 
