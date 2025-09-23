@@ -23,7 +23,7 @@
         }
         .main-content {
             padding: 10px;
-            padding-bottom: 320px; /* Increased padding for the new button row */
+            padding-bottom: 280px; 
         }
         h1 {
             font-family: 'Georgia', serif;
@@ -128,9 +128,6 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        #saveBtn { background-color: #27ae60; } /* Green for Save */
-        #openBtn { background-color: #f39c12; } /* Orange for Open */
-
         .blue-notes { color: #1e90ff; font-weight: bold; }
         .red-chords { color: #e74c3c; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
@@ -163,12 +160,6 @@
         
         <div id="note-buttons-container"></div>
         <div id="chord-buttons-container"></div>
-
-        <div class="controls">
-            <button id="saveBtn">💾 Save</button>
-            <button id="openBtn">📂 Open</button>
-            <input type="file" id="fileInput" accept=".jms" style="display: none;" />
-        </div>
     </div>
 
     <script>
@@ -176,9 +167,6 @@
         const semitoneValue = document.getElementById('semitoneValue');
         const noteButtonsContainer = document.getElementById('note-buttons-container');
         const chordButtonsContainer = document.getElementById('chord-buttons-container');
-        const saveBtn = document.getElementById('saveBtn');
-        const openBtn = document.getElementById('openBtn');
-        const fileInput = document.getElementById('fileInput');
 
         let semitones = 0;
         let accidentalPreference = 'sharp';
@@ -244,8 +232,10 @@
         function insertMusicUnit(note) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
+
             const range = selection.getRangeAt(0);
             range.deleteContents();
+
             const colorClass = insertionMode === 'notes' ? 'blue-notes' : 'red-chords';
             const unitSpan = document.createElement('span');
             unitSpan.className = `music-unit ${colorClass}`;
@@ -253,39 +243,66 @@
             unitSpan.dataset.originalExtension = '';
             unitSpan.contentEditable = false;
             unitSpan.innerHTML = formatNoteForDisplay(note);
+
             range.insertNode(unitSpan);
             range.setStartAfter(unitSpan);
             range.collapse(true);
+            
             selection.removeAllRanges();
             selection.addRange(range);
-            unitSpan.scrollIntoView({ block: 'nearest' });
+            
+            // This command is the key to keeping the current line visible
+            unitSpan.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
 
-        document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
-        document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
-        document.getElementById('resetButton').addEventListener('click', () => { semitones = 0; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
-        noteButtonsContainer.addEventListener('click', (e) => { const btn = e.target.closest('.note-btn'); if (btn) insertMusicUnit(btn.dataset.note); });
+        document.getElementById('transposeMinus').addEventListener('click', () => {
+            if (semitones > -12) semitones--;
+            updateTransposition();
+            inputTextArea.focus({ preventScroll: true });
+        });
+        document.getElementById('transposePlus').addEventListener('click', () => {
+            if (semitones < 12) semitones++;
+            updateTransposition();
+            inputTextArea.focus({ preventScroll: true });
+        });
+        document.getElementById('resetButton').addEventListener('click', () => {
+            semitones = 0;
+            updateTransposition();
+            inputTextArea.focus({ preventScroll: true });
+        });
+
+        noteButtonsContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.note-btn');
+            if (btn) insertMusicUnit(btn.dataset.note);
+        });
         
         chordButtonsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.chord-btn');
             if (!btn) return;
+            
             const ext = btn.dataset.ext;
             const selection = window.getSelection();
             if (!selection.rangeCount || !selection.anchorNode) return;
+
             let node = selection.anchorNode;
             let offset = selection.anchorOffset;
             let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.previousSibling : node.childNodes[offset - 1];
             let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
+            
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
+                
                 lastUnit.classList.remove('blue-notes');
                 lastUnit.classList.add('red-chords');
+                
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
+                
+                // Keep focus without scrolling, then ensure the element is visible
                 inputTextArea.focus({ preventScroll: true });
-                lastUnit.scrollIntoView({ block: 'nearest' });
+                lastUnit.scrollIntoView({ block: 'center', inline: 'nearest' });
             }
         });
 
@@ -309,88 +326,27 @@
             })
         );
         
+        // This listener now reliably handles BOTH Enter and Space
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
+
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
+
                 const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
                 const textNode = document.createTextNode(textToInsert);
+                
                 range.insertNode(textNode);
+
                 range.setStartAfter(textNode);
                 range.collapse(true);
+
                 selection.removeAllRanges();
                 selection.addRange(range);
             }
-        });
-
-        // --- NEW: Save and Open Logic ---
-        saveBtn.addEventListener('click', () => {
-            const filename = prompt("Enter a name for your song:", "my-song.jms");
-            if (!filename) return;
-
-            const state = {
-                contentHTML: inputTextArea.innerHTML,
-                semitones: semitones,
-                accidentalPreference: accidentalPreference,
-                insertionMode: insertionMode,
-            };
-
-            const fileContent = JSON.stringify(state, null, 2);
-            const blob = new Blob([fileContent], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename.endsWith('.jms') ? filename : filename + '.jms';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-
-        openBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const state = JSON.parse(event.target.result);
-                    
-                    // Restore state
-                    inputTextArea.innerHTML = state.contentHTML || '';
-                    semitones = state.semitones || 0;
-                    accidentalPreference = state.accidentalPreference || 'sharp';
-                    insertionMode = state.insertionMode || 'notes';
-
-                    // Update UI to match restored state
-                    semitoneValue.value = semitones;
-
-                    document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
-                    document.querySelectorAll('input[name="accidental"]').forEach(r => {
-                        r.parentElement.classList.toggle('selected', r.checked);
-    
-                    });
-
-                    document.querySelector(`input[name="insertionMode"][value="${insertionMode}"]`).checked = true;
-                    document.querySelectorAll('input[name="insertionMode"]').forEach(r => {
-                        r.parentElement.classList.toggle('selected', r.checked);
-                    });
-
-                    renderNoteButtons(); // Update note buttons to match loaded preference
-
-                } catch (err) {
-                    alert("Error: Could not open the file. It may be invalid or corrupted.");
-                }
-            };
-            reader.readAsText(file);
-            e.target.value = null; // Reset input to allow opening the same file again
         });
 
         window.onload = () => {
