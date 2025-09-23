@@ -248,8 +248,7 @@
 
             range.insertNode(unitSpan);
             
-            // SCROLL FIX: Ensure the new element is visible
-            unitSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            unitSpan.scrollIntoView({ block: 'nearest' });
 
             range.setStartAfter(unitSpan);
             range.collapse(true);
@@ -291,8 +290,7 @@
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 
-                // SCROLL FIX: Ensure the modified element is visible
-                lastUnit.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                lastUnit.scrollIntoView({ block: 'nearest' });
             }
         });
 
@@ -303,6 +301,7 @@
                 e.target.parentElement.classList.add('selected');
                 renderNoteButtons();
                 updateTransposition();
+                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
             })
         );
 
@@ -311,6 +310,7 @@
                 insertionMode = e.target.value;
                 e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
                 e.target.parentElement.classList.add('selected');
+                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
             })
         );
         
@@ -326,7 +326,6 @@
                 const newlineNode = document.createTextNode('\n');
                 range.insertNode(newlineNode);
 
-                // This range manipulation is enough to keep the view correct
                 range.setStartAfter(newlineNode);
                 range.collapse(true);
 
@@ -341,5 +340,4 @@
         };
     </script>
 </body>
-    </html>
-    
+</html>
