@@ -12,20 +12,17 @@
             --bg-color: #f4f4f9;
             --toolbar-bg: #eef2f5;
         }
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-        }
+        html { height: 100%; }
         body {
             height: 100vh; /* Use viewport height */
             height: 100dvh; /* Use dynamic viewport height for mobile keyboard resilience */
+            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--secondary-color);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
         .main-content {
             flex-grow: 1;
@@ -67,101 +64,60 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            z-index: 1000;
         }
         
-        .controls-row {
+        /* --- NEW TAB LAYOUT STYLES --- */
+        .tab-bar {
             display: flex;
-            gap: 8px;
-            justify-content: space-around;
-        }
-        .radio-button-group {
-            display: flex;
-            flex: 1;
             gap: 5px;
         }
-        .radio-button {
+        .tab-btn {
             flex: 1;
-            text-align: center;
             padding: 8px;
-            font-size: 1.1em;
+            font-size: 0.9em;
             font-weight: bold;
-            border: 2px solid var(--primary-color);
-            background: white;
-            color: var(--primary-color);
-            border-radius: 5px;
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .radio-button.selected {
-            background: var(--primary-color);
-            color: white;
-        }
-        input[type="radio"] { display: none; }
-
-        .controls { display: flex; gap: 10px; }
-        .controls button, .controls input { flex: 1; }
-        
-        /* --- NEW: Horizontally Scrolling Button Containers --- */
-        #note-buttons-container, #chord-buttons-container {
-            display: flex;
-            flex-wrap: nowrap; /* Prevents wrapping to a new line */
-            overflow-x: auto; /* Enables horizontal scrolling */
-            gap: 5px;
-            padding-bottom: 5px; /* Add some padding for the scrollbar */
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-        }
-        /* Hide scrollbar for a cleaner look */
-        #note-buttons-container::-webkit-scrollbar, #chord-buttons-container::-webkit-scrollbar {
-            display: none;
-        }
-        #note-buttons-container, #chord-buttons-container {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
-
-        #chord-buttons-container {
-            display: none; /* Still hidden by default */
-        }
-        
-        .note-btn, .chord-btn {
-            background: #fff;
-            color: var(--secondary-color);
+            background-color: #fff;
             border: 1px solid var(--light-gray);
             border-radius: 5px;
-            padding: 8px 10px;
-            font-family: monospace;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            flex-shrink: 0; /* Prevent buttons from shrinking */
-            min-width: 45px;
+            color: var(--primary-color);
+        }
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .tab-panel {
+            display: none; /* Hide all panels by default */
+            flex-direction: column;
+            gap: 8px;
+        }
+        .tab-panel.active {
+            display: flex; /* Show only the active panel */
+        }
+
+        .controls-row, .controls { display: flex; gap: 10px; }
+        .controls button, .controls input { flex: 1; }
+        .radio-button-group { display: flex; flex: 1; gap: 5px; }
+        .radio-button {
+            flex: 1; text-align: center; padding: 8px; font-size: 1.1em;
+            font-weight: bold; border: 2px solid var(--primary-color);
+            background: white; color: var(--primary-color); border-radius: 5px;
+            cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: center;
+        }
+        .radio-button.selected { background: var(--primary-color); color: white; }
+        input[type="radio"] { display: none; }
+        
+        #note-buttons-container { display: grid; gap: 5px; grid-template-columns: repeat(6, 1fr); }
+        #chord-buttons-container { display: grid; gap: 5px; grid-template-columns: repeat(5, 1fr); }
+        
+        .note-btn, .chord-btn {
+            background: #fff; color: var(--secondary-color); border: 1px solid var(--light-gray);
+            border-radius: 5px; padding: 8px 5px; font-family: monospace; font-size: 1em;
+            font-weight: bold; cursor: pointer; text-align: center;
         }
         
         .music-unit { display: inline; white-space: nowrap; user-select: none; }
-        input[type="text"] {
-            border: 1px solid var(--light-gray);
-            border-radius: 4px;
-            font-size: 1em;
-            text-align: center;
-            font-weight: bold;
-        }
-        button {
-            background: var(--primary-color);
-            color: white;
-            padding: 8px;
-            font-size: 1.2em;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        input[type="text"] { border: 1px solid var(--light-gray); border-radius: 4px; font-size: 1em; text-align: center; font-weight: bold; }
+        button { background: var(--primary-color); color: white; padding: 8px; font-size: 1.2em; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         #saveBtn { background-color: #27ae60; }
         #openBtn { background-color: #f39c12; }
 
@@ -169,27 +125,12 @@
         .red-chords { color: #e74c3c; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
 
-        .mode-toggle-container {
-            display: flex;
-            gap: 5px;
-        }
-        .mode-toggle-container button {
-            flex: 1;
-            background-color: var(--light-gray);
-            color: var(--secondary-color);
-        }
-        .mode-toggle-container button.active {
-            background-color: var(--secondary-color);
-            color: white;
-            font-weight: bold;
-        }
-        body.view-mode #editControlsWrapper {
-            display: none;
-        }
-        body.view-mode #inputTextArea {
-            border-color: transparent;
-            background-color: var(--bg-color);
-        }
+        .mode-toggle-container { display: flex; gap: 5px; }
+        .mode-toggle-container button { flex: 1; background-color: var(--light-gray); color: var(--secondary-color); }
+        .mode-toggle-container button.active { background-color: var(--secondary-color); color: white; font-weight: bold; }
+        
+        body.view-mode #editControlsWrapper { display: none; }
+        body.view-mode #inputTextArea { border-color: transparent; background-color: var(--bg-color); }
     </style>
 </head>
 <body>
@@ -206,18 +147,24 @@
         </div>
         
         <div id="editControlsWrapper">
-            <div class="controls-row">
-                <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
-                    <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
-                    <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
+            <div class="tab-bar">
+                <button class="tab-btn active" data-panel="notesPanel">Notes</button>
+                <button class="tab-btn" data-panel="chordsPanel">Chords</button>
+            </div>
+            <div id="panelContainer">
+                <div id="notesPanel" class="tab-panel active">
+                    <div class="controls-row">
+                        <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
+                            <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
+                            <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
+                        </div>
+                    </div>
+                    <div id="note-buttons-container"></div>
                 </div>
-                <div class="radio-button-group" role="radiogroup" aria-label="Mode">
-                    <label class="radio-button selected"><input type="radio" name="insertionMode" value="notes" checked />Note</label>
-                    <label class="radio-button"><input type="radio" name="insertionMode" value="chords" />Chord</label>
+                <div id="chordsPanel" class="tab-panel">
+                    <div id="chord-buttons-container"></div>
                 </div>
             </div>
-            <div id="note-buttons-container"></div>
-            <div id="chord-buttons-container"></div>
         </div>
 
         <div class="controls">
@@ -235,6 +182,7 @@
     </div>
 
     <script>
+        // --- Element References ---
         const inputTextArea = document.getElementById('inputTextArea');
         const semitoneValue = document.getElementById('semitoneValue');
         const noteButtonsContainer = document.getElementById('note-buttons-container');
@@ -244,15 +192,20 @@
         const fileInput = document.getElementById('fileInput');
         const viewModeBtn = document.getElementById('viewModeBtn');
         const editModeBtn = document.getElementById('editModeBtn');
+        const tabBar = document.querySelector('.tab-bar');
+        const tabPanels = document.querySelectorAll('.tab-panel');
         
+        // --- State Variables ---
         let semitones = 0;
         let accidentalPreference = 'sharp';
         let insertionMode = 'notes';
 
+        // --- Data ---
         const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
 
+        // --- Core Logic ---
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
 
         function transposeNote(note, shift) {
@@ -283,6 +236,7 @@
             return note;
         }
         
+        // --- UI Rendering ---
         function renderNoteButtons() {
             noteButtonsContainer.innerHTML = '';
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
@@ -306,6 +260,7 @@
             });
         }
         
+        // --- Editor Actions ---
         function insertMusicUnit(note) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
@@ -326,6 +281,7 @@
             unitSpan.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
         
+        // --- Event Listeners ---
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         document.getElementById('resetButton').addEventListener('click', () => { semitones = 0; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
@@ -340,4 +296,130 @@
             let node = selection.anchorNode;
             let offset = selection.anchorOffset;
             let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.previousSibling : node.childNodes[offset - 1];
-            let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE)
+            let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
+            if (lastUnit) {
+                const note = lastUnit.dataset.originalNote;
+                const newExt = (lastUnit.dataset.originalExtension || '') + ext;
+                lastUnit.classList.remove('blue-notes');
+                lastUnit.classList.add('red-chords');
+                lastUnit.dataset.originalExtension = newExt;
+                const transposedNote = transposeNote(note, semitones);
+                lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
+                inputTextArea.focus({ preventScroll: true });
+                lastUnit.scrollIntoView({ block: 'center', inline: 'nearest' });
+            }
+        });
+
+        document.querySelectorAll('input[name="accidental"]').forEach(radio =>
+            radio.addEventListener('change', (e) => {
+                accidentalPreference = e.target.value;
+                e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
+                e.target.parentElement.classList.add('selected');
+                renderNoteButtons();
+                updateTransposition();
+                inputTextArea.focus({ preventScroll: true });
+            })
+        );
+        
+        inputTextArea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const selection = window.getSelection();
+                if (!selection.rangeCount) return;
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
+                const textNode = document.createTextNode(textToInsert);
+                range.insertNode(textNode);
+                range.setStartAfter(textNode);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        });
+
+        saveBtn.addEventListener('click', () => {
+            const filename = prompt("Enter a name for your song:", "my-song.jms");
+            if (!filename) return;
+            const state = { contentHTML: inputTextArea.innerHTML, semitones: semitones, accidentalPreference: accidentalPreference, insertionMode: insertionMode, };
+            const fileContent = JSON.stringify(state, null, 2);
+            const blob = new Blob([fileContent], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename.endsWith('.jms') ? filename : filename + '.jms';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        openBtn.addEventListener('click', () => { fileInput.click(); });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const state = JSON.parse(event.target.result);
+                    inputTextArea.innerHTML = state.contentHTML || '';
+                    semitones = state.semitones || 0;
+                    accidentalPreference = state.accidentalPreference || 'sharp';
+                    insertionMode = state.insertionMode || 'notes';
+                    semitoneValue.value = semitones;
+                    document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
+                    document.querySelectorAll('input[name="accidental"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
+                    renderNoteButtons();
+                } catch (err) { alert("Error: Could not open the file."); }
+            };
+            reader.readAsText(file);
+            e.target.value = null;
+        });
+
+        viewModeBtn.addEventListener('click', () => {
+            document.body.classList.add('view-mode');
+            viewModeBtn.classList.add('active');
+            editModeBtn.classList.remove('active');
+            inputTextArea.contentEditable = false;
+        });
+
+        editModeBtn.addEventListener('click', () => {
+            document.body.classList.remove('view-mode');
+            editModeBtn.classList.add('active');
+            viewModeBtn.classList.remove('active');
+            inputTextArea.contentEditable = true;
+        });
+        
+        // --- NEW: Tab Switching Logic ---
+        tabBar.addEventListener('click', (e) => {
+            const targetBtn = e.target.closest('.tab-btn');
+            if (!targetBtn) return;
+            
+            const targetPanelId = targetBtn.dataset.panel;
+            
+            // Update insertion mode based on tab
+            insertionMode = targetPanelId === 'notesPanel' ? 'notes' : 'chords';
+
+            // Update active state for buttons
+            tabBar.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            targetBtn.classList.add('active');
+
+            // Update active state for panels
+            tabPanels.forEach(panel => {
+                if (panel.id === targetPanelId) {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+            inputTextArea.focus({ preventScroll: true });
+        });
+
+        window.onload = () => {
+            renderNoteButtons();
+            renderChordButtons();
+        };
+    </script>
+</body>
+</html>
