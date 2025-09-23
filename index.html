@@ -248,13 +248,15 @@
 
             range.insertNode(unitSpan);
             
-            unitSpan.scrollIntoView({ block: 'nearest' });
-
             range.setStartAfter(unitSpan);
             range.collapse(true);
             
             selection.removeAllRanges();
             selection.addRange(range);
+
+            // SCROLL FIX: This is the final step to ensure visibility
+            inputTextArea.focus({ preventScroll: true });
+            unitSpan.scrollIntoView({ block: 'nearest' });
         }
 
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
@@ -290,8 +292,9 @@
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 
+                // SCROLL FIX: Ensure focus without jumping, then scroll element into view
+                inputTextArea.focus({ preventScroll: true });
                 lastUnit.scrollIntoView({ block: 'nearest' });
-                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
             }
         });
 
@@ -315,22 +318,19 @@
             })
         );
         
-        // This listener now handles BOTH Enter and Space for maximum reliability
         inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault(); 
+            if (e.key === 'Enter') {
+                e.preventDefault();
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
 
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
 
-                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
-                const textNode = document.createTextNode(textToInsert);
-                
-                range.insertNode(textNode);
+                const newlineNode = document.createTextNode('\n');
+                range.insertNode(newlineNode);
 
-                range.setStartAfter(textNode);
+                range.setStartAfter(newlineNode);
                 range.collapse(true);
 
                 selection.removeAllRanges();
