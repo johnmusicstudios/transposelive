@@ -74,21 +74,32 @@
             box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
         }
         
-        .tab-bar { display: flex; gap: 5px; flex-basis: 50%; }
+        /* --- NEW: Combined Top Controls Row --- */
+        .top-controls-row {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+        .tab-bar {
+            display: flex;
+            gap: 5px;
+            flex-basis: 60%;
+        }
         .tab-btn {
             flex: 1; padding: 8px; font-size: 0.9em; font-weight: bold;
             background-color: var(--inactive-bg); border: 1px solid var(--light-gray);
             border-radius: 5px; color: var(--inactive-text); cursor: pointer;
             transition: background-color 0.2s, color 0.2s, border-color 0.2s;
         }
-        .tab-btn.active { background-color: var(--active-bg); color: var(--active-text); border-color: var(--active-bg); }
+        .tab-btn.active {
+            background-color: var(--active-bg); color: var(--active-text);
+            border-color: var(--active-bg);
+        }
         .tab-btn:hover:not(.active) { background-color: #d0d0d0; }
 
-        .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
-        .controls-row { display: flex; gap: 10px; }
-        .controls button { flex: 1; }
-        .radio-button-group { display: flex; flex: 1; gap: 5px; flex-basis: 50%; }
+        .radio-button-group {
+            display: flex; flex: 1; gap: 5px; flex-basis: 40%;
+        }
         .radio-button {
             flex: 1; text-align: center; padding: 8px; font-size: 1.1em;
             font-weight: bold; border: 1px solid var(--light-gray);
@@ -97,11 +108,29 @@
             transition: background-color 0.2s, color 0.2s, border-color 0.2s;
         }
         .radio-button:hover:not(.selected) { background-color: #f0f0f0; }
-        .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .radio-button.selected {
+            background: var(--primary-color); color: white; border-color: var(--primary-color);
+        }
         input[type="radio"] { display: none; }
         
-        #note-buttons-container { display: grid; gap: 5px; grid-template-columns: repeat(6, 1fr); margin-top: 8px; }
-        #chord-buttons-container { display: grid; gap: 5px; grid-template-columns: repeat(5, 1fr); }
+        /* --- NEW: Balanced Transpose Controls --- */
+        .transpose-controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+
+        .controls { display: flex; gap: 5px; } /* Reduced gap for file buttons */
+        .controls button, .controls input { flex: 1; }
+        
+        #note-buttons-container, #chord-buttons-container {
+            display: grid; gap: 5px;
+        }
+        #note-buttons-container { grid-template-columns: repeat(6, 1fr); }
+        #chord-buttons-container {
+            grid-template-columns: repeat(5, 1fr);
+            display: none; /* Hidden by default, shown when Chords tab is active */
+        }
         
         .note-btn, .chord-btn {
             background: #fff; color: var(--secondary-color); border: 1px solid var(--light-gray);
@@ -112,31 +141,30 @@
         .note-btn:hover, .chord-btn:hover { background-color: var(--primary-color); color: white; }
         
         .music-unit { display: inline; white-space: nowrap; user-select: none; }
-        
-        .transpose-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr; /* Perfectly equal columns */
-            gap: 10px;
+        input[type="text"] { 
+            border: 1px solid var(--light-gray); border-radius: 4px; font-size: 1em; text-align: center; font-weight: bold;
+            padding: 8px; color: var(--secondary-color); box-sizing: border-box;
         }
-        .transpose-controls > * { width: 100%; box-sizing: border-box; } /* Make items fill their grid cell */
-        
-        input[type="text"] { border: 1px solid var(--light-gray); border-radius: 4px; font-size: 1em; text-align: center; font-weight: bold; padding: 8px; color: var(--secondary-color); }
-        button { background: var(--primary-color); color: white; padding: 8px; font-size: 1.2em; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s, transform 0.1s; }
+        button {
+            background: var(--primary-color); color: white; padding: 8px; font-size: 1.2em; border: none; border-radius: 4px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background-color 0.2s;
+        }
         button:hover { background-color: var(--button-hover-bg); }
-        
+
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
 
         .mode-toggle-container { display: flex; gap: 5px; }
-        .mode-toggle-container button { flex: 1; background-color: var(--inactive-bg); color: var(--inactive-text); font-size: 1.1em; }
+        .mode-toggle-container button { flex: 1; background-color: var(--inactive-bg); color: var(--inactive-text); }
         .mode-toggle-container button.active { background-color: var(--secondary-color); color: white; font-weight: bold; }
         .mode-toggle-container button:hover:not(.active) { background-color: #d0d0d0; }
         
         body.view-mode #editControlsWrapper { display: none; }
         body.view-mode #inputTextArea { border-color: transparent; background-color: var(--bg-color); }
 
-        .icon { width: 1.2em; height: 1.2em; fill: currentColor; vertical-align: middle; }
+        .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
     </style>
 </head>
 <body>
@@ -153,10 +181,10 @@
         </div>
         
         <div id="editControlsWrapper">
-            <div class="controls-row">
+            <div class="top-controls-row">
                 <div class="tab-bar">
-                    <button class="tab-btn active" data-panel="notesPanel">Notes</button>
-                    <button class="tab-btn" data-panel="chordsPanel">Chords</button>
+                    <button class="tab-btn active" data-mode="notes">Notes</button>
+                    <button class="tab-btn" data-mode="chords">Chords</button>
                 </div>
                 <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
                     <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
@@ -164,14 +192,10 @@
                 </div>
             </div>
             <div id="note-buttons-container"></div>
-            <div id="panelContainer">
-                <div id="chordsPanel" class="tab-panel">
-                    <div id="chord-buttons-container"></div>
-                </div>
-            </div>
+            <div id="chord-buttons-container"></div>
         </div>
 
-        <div class="transpose-controls">
+        <div class="controls transpose-controls">
             <button id="transposeMinus" title="Transpose Down">-</button>
             <input type="text" id="semitoneValue" value="0" readonly />
             <button id="transposePlus" title="Transpose Up">+</button>
@@ -197,7 +221,6 @@
         const viewModeBtn = document.getElementById('viewModeBtn');
         const editModeBtn = document.getElementById('editModeBtn');
         const tabBar = document.querySelector('.tab-bar');
-        const chordsPanel = document.getElementById('chordsPanel');
         
         // --- State Variables ---
         let semitones = 0;
@@ -211,14 +234,12 @@
 
         // --- Core Logic ---
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
-
         function transposeNote(note, shift) {
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
             const idx = noteIndex(note);
             if (idx === -1) return note;
             return notes[(idx + shift + 12) % 12];
         }
-        
         function updateTransposition() {
             semitoneValue.value = semitones;
             inputTextArea.querySelectorAll('.music-unit').forEach(unit => {
@@ -230,14 +251,12 @@
                 }
             });
         }
-        
         function formatNoteForDisplay(note) {
             if (note.length > 1) {
                 const accidental = note.slice(1);
                 const accidentalClass = accidental === '#' ? 'sharp' : 'flat';
                 return `${note.charAt(0)}<span class="${accidentalClass}">${accidental}</span>`;
-            }
-            return note;
+            } return note;
         }
         
         // --- UI Rendering ---
@@ -252,7 +271,6 @@
                 noteButtonsContainer.appendChild(btn);
             });
         }
-
         function renderChordButtons() {
             chordButtonsContainer.innerHTML = '';
             chordExtensions.forEach(ext => {
@@ -353,7 +371,7 @@
             a.href = url;
             a.download = filename.endsWith('.jms') ? filename : filename + '.jms';
             document.body.appendChild(a);
-            a.click();
+a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         });
@@ -375,11 +393,7 @@
                     document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
                     document.querySelectorAll('input[name="accidental"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
                     renderNoteButtons();
-                    if (insertionMode === 'chords') {
-                        document.querySelector('.tab-btn[data-panel="chordsPanel"]').click();
-                    } else {
-                        document.querySelector('.tab-btn[data-panel="notesPanel"]').click();
-                    }
+                    document.querySelector(`.tab-btn[data-mode="${insertionMode}"]`).click();
                 } catch (err) { alert("Error: Could not open the file."); }
             };
             reader.readAsText(file);
@@ -400,29 +414,25 @@
             inputTextArea.contentEditable = true;
         });
         
-        // --- Tab Switching Logic ---
         tabBar.addEventListener('click', (e) => {
             const targetBtn = e.target.closest('.tab-btn');
             if (!targetBtn) return;
             
-            const targetPanelId = targetBtn.dataset.panel;
-            
-            insertionMode = targetPanelId === 'notesPanel' ? 'notes' : 'chords';
+            insertionMode = targetBtn.dataset.mode;
 
             tabBar.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             targetBtn.classList.add('active');
-
-            // Toggle the visibility of the chords panel
-            chordsPanel.classList.toggle('active', insertionMode === 'chords');
+            
+            // Show/hide chord extensions based on selected tab
+            chordButtonsContainer.style.display = insertionMode === 'chords' ? 'grid' : 'none';
 
             inputTextArea.focus({ preventScroll: true });
         });
 
-        // --- Initial Setup ---
         window.onload = () => {
             renderNoteButtons();
             renderChordButtons();
-            document.querySelector('.tab-btn[data-panel="notesPanel"]').click();
+            document.querySelector('.tab-btn[data-mode="notes"]').click();
         };
     </script>
 </body>
