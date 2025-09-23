@@ -291,6 +291,7 @@
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 
                 lastUnit.scrollIntoView({ block: 'nearest' });
+                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
             }
         });
 
@@ -301,7 +302,7 @@
                 e.target.parentElement.classList.add('selected');
                 renderNoteButtons();
                 updateTransposition();
-                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
+                inputTextArea.focus({ preventScroll: true });
             })
         );
 
@@ -310,23 +311,26 @@
                 insertionMode = e.target.value;
                 e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
                 e.target.parentElement.classList.add('selected');
-                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
+                inputTextArea.focus({ preventScroll: true });
             })
         );
         
+        // This listener now handles BOTH Enter and Space for maximum reliability
         inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault(); 
                 const selection = window.getSelection();
                 if (!selection.rangeCount) return;
 
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
 
-                const newlineNode = document.createTextNode('\n');
-                range.insertNode(newlineNode);
+                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
+                const textNode = document.createTextNode(textToInsert);
+                
+                range.insertNode(textNode);
 
-                range.setStartAfter(newlineNode);
+                range.setStartAfter(textNode);
                 range.collapse(true);
 
                 selection.removeAllRanges();
