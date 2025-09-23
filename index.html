@@ -23,7 +23,7 @@
         }
         .main-content {
             padding: 10px;
-            padding-bottom: 320px; 
+            padding-bottom: 300px; 
         }
         h1 {
             font-family: 'Georgia', serif;
@@ -60,31 +60,6 @@
             gap: 8px;
             z-index: 1000;
             transition: bottom 0.2s ease-in-out;
-        }
-        
-        /* --- NEW: Styles for Edit/View Toggle --- */
-        .mode-toggle-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-            border: 2px solid var(--primary-color);
-            border-radius: 7px;
-            padding: 3px;
-        }
-        .mode-btn {
-            background-color: transparent;
-            color: var(--primary-color);
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-        }
-        .mode-btn.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        /* This one rule hides all the edit-only controls */
-        .view-mode-active .edit-only {
-            display: none;
         }
         
         .controls-row {
@@ -159,6 +134,30 @@
         .blue-notes { color: #1e90ff; font-weight: bold; }
         .red-chords { color: #e74c3c; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
+
+        /* --- NEW: View/Edit Mode Styles --- */
+        .mode-toggle-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        .mode-toggle-container button {
+            flex: 1;
+            background-color: var(--light-gray);
+            color: var(--secondary-color);
+        }
+        .mode-toggle-container button.active {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: bold;
+        }
+        body.view-mode #editControlsWrapper {
+            display: none;
+        }
+        body.view-mode #inputTextArea {
+            border-color: transparent;
+            background-color: var(--bg-color);
+        }
     </style>
 </head>
 <body>
@@ -169,21 +168,26 @@
     </div>
 
     <div class="fixed-toolbar">
-        <div class="mode-toggle-group">
-            <button id="editModeBtn" class="mode-btn active">Edit</button>
-            <button id="viewModeBtn" class="mode-btn">View</button>
+        <div class="mode-toggle-container">
+            <button id="viewModeBtn">👓 View</button>
+            <button id="editModeBtn" class="active">✏️ Edit</button>
         </div>
         
-        <div class="controls-row edit-only">
-            <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
-                <label class="radio-button selected"><input type="radio" name="accidental" value="sharp" checked />Sharps (#)</label>
-                <label class="radio-button"><input type="radio" name="accidental" value="flat" />Flats (b)</label>
+        <div id="editControlsWrapper">
+            <div class="controls-row">
+                <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
+                    <label class="radio-button selected"><input type="radio" name="accidental" value="sharp" checked />Sharps (#)</label>
+                    <label class="radio-button"><input type="radio" name="accidental" value="flat" />Flats (b)</label>
+                </div>
+                <div class="radio-button-group" role="radiogroup" aria-label="Mode">
+                    <label class="radio-button selected"><input type="radio" name="insertionMode" value="notes" checked />Note</label>
+                    <label class="radio-button"><input type="radio" name="insertionMode" value="chords" />Chord</label>
+                </div>
             </div>
-            <div class="radio-button-group" role="radiogroup" aria-label="Mode">
-                <label class="radio-button selected"><input type="radio" name="insertionMode" value="notes" checked />Note</label>
-                <label class="radio-button"><input type="radio" name="insertionMode" value="chords" />Chord</label>
-            </div>
+            <div id="note-buttons-container"></div>
+            <div id="chord-buttons-container"></div>
         </div>
+
         <div class="controls">
             <button id="transposeMinus">-</button>
             <input type="text" id="semitoneValue" value="0" readonly style="text-align:center; font-weight: bold;" />
@@ -191,9 +195,6 @@
             <button id="resetButton">Reset</button>
         </div>
         
-        <div id="note-buttons-container" class="edit-only"></div>
-        <div id="chord-buttons-container" class="edit-only"></div>
-
         <div class="controls">
             <button id="saveBtn">💾 Save</button>
             <button id="openBtn">📂 Open</button>
@@ -209,31 +210,16 @@
         const saveBtn = document.getElementById('saveBtn');
         const openBtn = document.getElementById('openBtn');
         const fileInput = document.getElementById('fileInput');
-        const fixedToolbar = document.querySelector('.fixed-toolbar');
-        const editModeBtn = document.getElementById('editModeBtn');
         const viewModeBtn = document.getElementById('viewModeBtn');
-
+        const editModeBtn = document.getElementById('editModeBtn');
+        
         let semitones = 0;
         let accidentalPreference = 'sharp';
         let insertionMode = 'notes';
 
-        // --- Event Listeners for Edit/View Mode ---
-        editModeBtn.addEventListener('click', () => {
-            fixedToolbar.classList.remove('view-mode-active');
-            inputTextArea.contentEditable = true;
-            editModeBtn.classList.add('active');
-            viewModeBtn.classList.remove('active');
-            inputTextArea.focus({preventScroll: true});
-        });
-
-        viewModeBtn.addEventListener('click', () => {
-            fixedToolbar.classList.add('view-mode-active');
-            inputTextArea.contentEditable = false;
-            viewModeBtn.classList.add('active');
-            editModeBtn.classList.remove('active');
-        });
-
-        // --- Core Application Logic ---
+        const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+        const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
 
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
 
@@ -307,7 +293,7 @@
             selection.addRange(range);
             unitSpan.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
-
+        
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         document.getElementById('resetButton').addEventListener('click', () => { semitones = 0; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
@@ -409,9 +395,13 @@
                     insertionMode = state.insertionMode || 'notes';
                     semitoneValue.value = semitones;
                     document.querySelector(`input[name="accidental"][value="${accidentalPreference}"]`).checked = true;
-                    document.querySelectorAll('input[name="accidental"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
+                    document.querySelectorAll('input[name="accidental"]').forEach(r => {
+                        r.parentElement.classList.toggle('selected', r.checked);
+                    });
                     document.querySelector(`input[name="insertionMode"][value="${insertionMode}"]`).checked = true;
-                    document.querySelectorAll('input[name="insertionMode"]').forEach(r => { r.parentElement.classList.toggle('selected', r.checked); });
+                    document.querySelectorAll('input[name="insertionMode"]').forEach(r => {
+                        r.parentElement.classList.toggle('selected', r.checked);
+                    });
                     renderNoteButtons();
                 } catch (err) {
                     alert("Error: Could not open the file. It may be invalid or corrupted.");
@@ -419,6 +409,21 @@
             };
             reader.readAsText(file);
             e.target.value = null;
+        });
+
+        // --- NEW: View/Edit Mode Logic ---
+        viewModeBtn.addEventListener('click', () => {
+            document.body.classList.add('view-mode');
+            viewModeBtn.classList.add('active');
+            editModeBtn.classList.remove('active');
+            inputTextArea.contentEditable = false;
+        });
+
+        editModeBtn.addEventListener('click', () => {
+            document.body.classList.remove('view-mode');
+            editModeBtn.classList.add('active');
+            viewModeBtn.classList.remove('active');
+            inputTextArea.contentEditable = true;
         });
 
         window.onload = () => {
