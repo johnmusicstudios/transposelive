@@ -144,7 +144,7 @@
         </div>
     </div>
 
-        <script>
+    <script>
         // --- Element References ---
         const body = document.body;
         const inputTextArea = document.getElementById('inputTextArea');
@@ -157,7 +157,6 @@
         const fileInput = document.getElementById('fileInput');
         const mainNav = document.querySelector('.main-nav');
         const contextPanels = document.querySelectorAll('.context-panel');
-        const resetButton = document.getElementById('resetButton');
 
         // --- State Variables ---
         let semitones = 0;
@@ -223,7 +222,6 @@
             });
         }
         
-        // --- Editor Actions ---
         function insertMusicUnit(note, extension = '') {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
@@ -252,10 +250,8 @@
             return (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
         }
 
-        // --- Event Listeners ---
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
-        resetButton.addEventListener('click', () => { semitones = 0; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         
         const noteInsertHandler = (e) => {
             const btn = e.target.closest('.note-btn');
@@ -347,10 +343,8 @@
             const targetBtn = e.target.closest('.nav-btn');
             if (!targetBtn) return;
             const targetPanelId = targetBtn.dataset.panel;
-            
             mainNav.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             targetBtn.classList.add('active');
-
             contextPanels.forEach(panel => panel.classList.toggle('active', panel.id === targetPanelId));
             inputTextArea.focus({ preventScroll: true });
         });
@@ -374,6 +368,6 @@
             }
         };
     </script>
-    
 </body>
 </html>
+
