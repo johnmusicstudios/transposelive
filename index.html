@@ -65,16 +65,13 @@
         }
         .nav-btn.active { background-color: var(--primary-color); color: white; }
 
-        /* --- CORRECTED: Tool Panel Layout using Flexbox --- */
+        /* --- FINAL CORRECTED: Tool Panel Layout --- */
         .tool-row {
-            display: flex;
+            display: grid;
             gap: 5px;
-            align-items: stretch;
         }
-        .tool-row > * {
-            flex: 1; /* Distribute space equally */
-            min-width: 0; /* Allow items to shrink properly */
-        }
+        .tool-row.six-col { grid-template-columns: repeat(6, 1fr); }
+        .tool-row.two-col { grid-template-columns: repeat(2, 1fr); }
 
         .radio-button {
             text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold;
@@ -123,14 +120,15 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
             </div>
             <div id="toolsPanel" class="context-panel">
-                <div class="tool-row">
+                <div class="tool-row six-col">
                     <button id="transposeMinus" title="Transpose Down">-</button>
                     <input type="text" id="semitoneValue" value="0" readonly />
                     <button id="transposePlus" title="Transpose Up">+</button>
+                    <button id="resetButton" title="Reset Transposition">🔄</button>
                     <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
                     <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
                 </div>
-                <div class="tool-row">
+                <div class="tool-row two-col">
                     <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
                     <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
                     <input type="file" id="fileInput" accept=".jms" style="display: none;" />
@@ -157,6 +155,7 @@
         const fileInput = document.getElementById('fileInput');
         const mainNav = document.querySelector('.main-nav');
         const contextPanels = document.querySelectorAll('.context-panel');
+        const resetButton = document.getElementById('resetButton');
 
         // --- State Variables ---
         let semitones = 0;
@@ -222,6 +221,7 @@
             });
         }
         
+        // --- Editor Actions ---
         function insertMusicUnit(note, extension = '') {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
@@ -250,8 +250,10 @@
             return (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
         }
 
+        // --- Event Listeners ---
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
+        resetButton.addEventListener('click', () => { semitones = 0; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         
         const noteInsertHandler = (e) => {
             const btn = e.target.closest('.note-btn');
@@ -277,6 +279,7 @@
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 lastUnit.scrollIntoView({ block: 'center' });
+                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
             }
         });
 
@@ -287,7 +290,10 @@
                 document.querySelector(`label[title="${e.target.value === 'sharp' ? 'Sharps' : 'Flats'}"]`).classList.add('selected');
                 renderAllNoteButtons();
                 updateTransposition();
-                inputTextArea.focus({ preventScroll: true });
+                // KEYBOARD FIX: Only focus if the keyboard is already visible
+                if (body.classList.contains('keyboard-visible')) {
+                    inputTextArea.focus({ preventScroll: true });
+                }
             })
         );
         
@@ -343,8 +349,10 @@
             const targetBtn = e.target.closest('.nav-btn');
             if (!targetBtn) return;
             const targetPanelId = targetBtn.dataset.panel;
+            
             mainNav.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             targetBtn.classList.add('active');
+
             contextPanels.forEach(panel => panel.classList.toggle('active', panel.id === targetPanelId));
             inputTextArea.focus({ preventScroll: true });
         });
