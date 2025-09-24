@@ -157,6 +157,7 @@
         const fileInput = document.getElementById('fileInput');
         const mainNav = document.querySelector('.main-nav');
         const contextPanels = document.querySelectorAll('.context-panel');
+        const toolsPanel = document.getElementById('toolsPanel'); // Added for keyboard fix
 
         // --- State Variables ---
         let semitones = 0;
@@ -250,10 +251,10 @@
             return (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
         }
 
-        // --- FINAL FIX START: Removed focus() calls that were opening the keyboard ---
+        // --- Event Listeners ---
+
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
-        // --- FINAL FIX END ---
         
         const noteInsertHandler = (e) => {
             const btn = e.target.closest('.note-btn');
@@ -264,12 +265,6 @@
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
         noteButtonsContainerChords.addEventListener('click', noteInsertHandler);
-
-        chordButtonsContainer.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.chord-btn')) {
-                e.preventDefault();
-            }
-        });
 
         chordButtonsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.chord-btn');
@@ -297,6 +292,28 @@
                 updateTransposition();
             })
         );
+        
+        mainNav.addEventListener('click', e => {
+            const targetBtn = e.target.closest('.nav-btn');
+            if (!targetBtn) return;
+            const targetPanelId = targetBtn.dataset.panel;
+            mainNav.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            targetBtn.classList.add('active');
+            contextPanels.forEach(panel => panel.classList.toggle('active', panel.id === targetPanelId));
+        });
+
+        // --- KEYBOARD BEHAVIOR FIXES ---
+        // The following 'mousedown' listeners prevent buttons from stealing focus from the
+        // text area. This ensures the keyboard's state (open or closed) is not changed.
+        const preventFocusSteal = (e) => {
+            if (e.target.closest('button') || e.target.closest('.radio-button') || e.target.closest('.nav-btn')) {
+                e.preventDefault();
+            }
+        };
+        toolsPanel.addEventListener('mousedown', preventFocusSteal);
+        mainNav.addEventListener('mousedown', preventFocusSteal);
+        chordButtonsContainer.addEventListener('mousedown', preventFocusSteal);
+        // Note buttons already manage focus correctly via insertMusicUnit, so they don't need this.
         
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -344,15 +361,6 @@
             };
             reader.readAsText(file);
             e.target.value = null;
-        });
-        
-        mainNav.addEventListener('click', e => {
-            const targetBtn = e.target.closest('.nav-btn');
-            if (!targetBtn) return;
-            const targetPanelId = targetBtn.dataset.panel;
-            mainNav.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            targetBtn.classList.add('active');
-            contextPanels.forEach(panel => panel.classList.toggle('active', panel.id === targetPanelId));
         });
         
         function handleKeyboardVisibility() {
