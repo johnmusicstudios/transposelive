@@ -36,7 +36,6 @@
             line-height: 1.6; white-space: pre-wrap; overflow-wrap: break-word;
             overflow-y: auto; resize: none;
         }
-        
         .toolbar {
             flex-shrink: 0; background: var(--toolbar-bg); border-top: 1px solid var(--light-gray);
             box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
@@ -45,15 +44,9 @@
         .context-panel { display: none; flex-direction: column; gap: 8px; }
         .context-panel.active { display: flex; }
 
-        .button-scroll-wrapper {
-            overflow-x: auto;
-            -ms-overflow-style: none; scrollbar-width: none;
-        }
+        .button-scroll-wrapper { overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
         .button-scroll-wrapper::-webkit-scrollbar { display: none; }
-        
-        .button-row {
-            display: flex; flex-wrap: nowrap; gap: 5px; padding-bottom: 5px;
-        }
+        .button-row { display: flex; flex-wrap: nowrap; gap: 5px; padding-bottom: 5px; }
         .note-btn, .chord-btn {
             flex-shrink: 0; min-width: 50px; background: #fff; color: var(--secondary-color);
             border: 1px solid var(--light-gray); border-radius: 5px; padding: 8px 5px;
@@ -72,8 +65,14 @@
         .nav-btn.active { background-color: var(--primary-color); color: white; }
 
         .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .tool-group { display: flex; flex-direction: column; gap: 5px; }
+        .tool-group .label { font-size: 0.75em; text-align: center; font-weight: bold; color: #666; margin-bottom: 2px; }
         .transpose-controls { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 5px; }
-        
+        .radio-button-group { display: flex; flex: 1; gap: 5px; }
+        .radio-button { flex: 1; text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold; border: 1px solid var(--light-gray); background: #fff; color: var(--secondary-color); border-radius: 5px; cursor: pointer; user-select: none; }
+        .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        input[type="radio"] { display: none; }
+
         .music-unit { display: inline; white-space: nowrap; user-select: none; }
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
@@ -96,12 +95,6 @@
         <div class="contextual-controls">
             <div id="notesPanel" class="context-panel">
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container"></div></div>
-                <div class="controls-row">
-                    <div class="radio-button-group">
-                        <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
-                        <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
-                    </div>
-                </div>
             </div>
             <div id="chordsPanel" class="context-panel">
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
@@ -109,15 +102,33 @@
             </div>
             <div id="toolsPanel" class="context-panel">
                 <div class="tools-grid">
-                    <div class="controls transpose-controls">
-                        <button id="transposeMinus" title="Transpose Down">-</button>
-                        <input type="text" id="semitoneValue" value="0" readonly />
-                        <button id="transposePlus" title="Transpose Up">+</button>
+                    <div class="tool-group">
+                        <div class="label">TRANSPOSE</div>
+                        <div class="controls transpose-controls">
+                            <button id="transposeMinus" title="Transpose Down">-</button>
+                            <input type="text" id="semitoneValue" value="0" readonly />
+                            <button id="transposePlus" title="Transpose Up">+</button>
+                        </div>
                     </div>
-                    <div class="controls">
-                         <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
-                         <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
-                         <input type="file" id="fileInput" accept=".jms" style="display: none;" />
+                     <div class="tool-group">
+                        <div class="label">ACCIDENTALS</div>
+                        <div class="radio-button-group">
+                            <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
+                            <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
+                        </div>
+                    </div>
+                    <div class="tool-group">
+                        <div class="label">SAVE</div>
+                        <div class="controls">
+                            <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
+                        </div>
+                    </div>
+                     <div class="tool-group">
+                        <div class="label">OPEN</div>
+                        <div class="controls">
+                            <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
+                            <input type="file" id="fileInput" accept=".jms" style="display: none;" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -233,12 +244,15 @@
         }
         
         // --- Event Listeners ---
-        document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
-        document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
+        document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
+        document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         
         const noteInsertHandler = (e) => {
             const btn = e.target.closest('.note-btn');
-            if(btn) insertMusicUnit(btn.dataset.note);
+            if(btn) {
+                insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
+                insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined);
+            }
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
         noteButtonsContainerChords.addEventListener('click', noteInsertHandler);
@@ -250,8 +264,7 @@
             const selection = window.getSelection();
             if (!selection.rangeCount || !selection.anchorNode) return;
             let node = selection.anchorNode;
-            let offset = selection.anchorOffset;
-            let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.previousSibling : (node.childNodes[offset - 1] || node.previousSibling);
+            let precedingNode = (node.nodeType === Node.TEXT_NODE && selection.anchorOffset > 0) ? node.previousSibling : (node.childNodes[selection.anchorOffset - 1] || node.previousSibling);
             let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
@@ -272,6 +285,7 @@
                 e.target.closest('.radio-button-group').querySelector(`[value="${accidentalPreference}"]`).parentElement.classList.add('selected');
                 renderAllNoteButtons();
                 updateTransposition();
+                inputTextArea.focus({ preventScroll: true });
             })
         );
         
@@ -332,8 +346,9 @@
             targetBtn.classList.add('active');
 
             contextPanels.forEach(panel => panel.classList.toggle('active', panel.id === targetPanelId));
+            inputTextArea.focus({ preventScroll: true });
         });
-
+        
         function handleKeyboardVisibility() {
             if (!window.visualViewport) return;
             if (window.visualViewport.height < initialWindowHeight * 0.9) {
@@ -346,7 +361,7 @@
         window.onload = () => {
             renderAllNoteButtons();
             renderChordButtons();
-            document.querySelector('.nav-btn[data-panel="notesPanel"]').click(); // Activate notes tab by default
+            document.querySelector('.nav-btn[data-panel="notesPanel"]').click();
             if (window.visualViewport) {
                 initialWindowHeight = window.innerHeight;
                 window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
