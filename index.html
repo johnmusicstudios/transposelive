@@ -13,73 +13,66 @@
             --toolbar-bg: #eef2f5;
         }
         html, body {
-            height: 100%;
-            margin: 0;
-            overflow: hidden;
+            height: 100%; margin: 0; overflow: hidden;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--secondary-color);
-            display: flex;
-            flex-direction: column;
+            background-color: var(--bg-color); color: var(--secondary-color);
+            display: flex; flex-direction: column;
         }
         .main-content {
-            flex-grow: 1;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
+            flex-grow: 1; padding: 10px; padding-bottom: 0;
+            display: flex; flex-direction: column; min-height: 0;
         }
         h1 {
-            font-family: 'Georgia', serif;
-            font-size: 1.5em;
-            text-align: center;
-            margin: 0 0 10px 0;
-            flex-shrink: 0;
-            color: var(--primary-color);
-            transition: height 0.2s, margin 0.2s, opacity 0.2s;
+            font-family: 'Georgia', serif; font-size: 1.5em; text-align: center;
+            margin: 0 0 10px 0; flex-shrink: 0; color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
         }
         #inputTextArea {
-            flex-grow: 1;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 1.1em;
-            border: 1px solid var(--light-gray);
-            padding: 12px;
-            border-radius: 6px;
-            outline: none;
-            box-sizing: border-box;
-            background: #fff;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-            overflow-y: auto;
-            resize: none;
+            flex-grow: 1; width: 100%; font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1em; border: 1px solid var(--light-gray); padding: 12px;
+            border-radius: 6px; outline: none; box-sizing: border-box; background: #fff;
+            line-height: 1.6; white-space: pre-wrap; overflow-wrap: break-word;
+            overflow-y: auto; resize: none;
         }
         
         .toolbar {
-            flex-shrink: 0;
-            background: var(--toolbar-bg);
-            border-top: 1px solid var(--light-gray);
-            padding: 8px;
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            grid-template-rows: auto auto;
-            gap: 8px;
+            flex-shrink: 0; background: var(--toolbar-bg); border-top: 1px solid var(--light-gray);
             box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
         }
-        .transpose-controls {
-            grid-column: 1 / 4;
-            display: grid;
-            grid-template-columns: 1fr 2fr 1fr;
-            gap: 5px;
+        .contextual-controls { padding: 8px; }
+        .context-panel { display: none; flex-direction: column; gap: 8px; }
+        .context-panel.active { display: flex; }
+
+        .button-scroll-wrapper {
+            overflow-x: auto;
+            -ms-overflow-style: none; scrollbar-width: none;
         }
-        #addMusicBtn {
-            grid-column: 1 / -1;
-            font-weight: bold;
-            padding: 12px;
-            font-size: 1em;
+        .button-scroll-wrapper::-webkit-scrollbar { display: none; }
+        
+        .button-row {
+            display: flex; flex-wrap: nowrap; gap: 5px; padding-bottom: 5px;
         }
+        .note-btn, .chord-btn {
+            flex-shrink: 0; min-width: 50px; background: #fff; color: var(--secondary-color);
+            border: 1px solid var(--light-gray); border-radius: 5px; padding: 8px 5px;
+            font-family: monospace; font-size: 1em; font-weight: bold; cursor: pointer; text-align: center;
+        }
+        
+        .main-nav {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+            background-color: var(--light-gray); border-top: 1px solid var(--light-gray);
+        }
+        .nav-btn {
+            background-color: #fdfdfd; border: none; border-radius: 0; padding: 10px 5px;
+            font-size: 0.9em; font-weight: bold; color: var(--secondary-color);
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .nav-btn.active { background-color: var(--primary-color); color: white; }
+
+        .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .transpose-controls { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 5px; }
         
         .music-unit { display: inline; white-space: nowrap; user-select: none; }
         .blue-notes { color: var(--primary-color); font-weight: bold; }
@@ -87,46 +80,9 @@
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
         button { background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         input[type="text"] { border: 1px solid var(--light-gray); border-radius: 4px; font-size: 1em; text-align: center; font-weight: bold; padding: 8px; color: var(--secondary-color); box-sizing: border-box; }
-
-        /* --- MODAL PALETTE STYLES --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;
-        }
-        .modal-overlay.hidden { display: none; }
-        .modal-content {
-            background: var(--bg-color); border-radius: 8px; padding: 15px;
-            width: 90%; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            display: flex; flex-direction: column; gap: 15px;
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; }
-        .modal-header h3 { margin: 0; color: var(--secondary-color); }
-        #closePaletteBtn { background: none; border: none; font-size: 1.8em; color: var(--light-gray); padding: 0; line-height: 1; }
-        .radio-button-group { display: flex; flex: 1; gap: 5px; }
-        .radio-button { flex: 1; text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold; border: 1px solid var(--light-gray); background: #fff; color: var(--secondary-color); border-radius: 5px; cursor: pointer; user-select: none; }
-        .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
-        input[type="radio"] { display: none; }
-        #palette-note-buttons { display: grid; gap: 5px; grid-template-columns: repeat(6, 1fr); }
-        #palette-chord-buttons { display: grid; gap: 5px; grid-template-columns: repeat(5, 1fr); }
-        .palette-btn { background: #fff; color: var(--secondary-color); border: 1px solid var(--light-gray); border-radius: 5px; padding: 10px 5px; font-family: monospace; font-size: 1em; font-weight: bold; cursor: pointer; text-align: center; }
-        .palette-btn.selected { background: var(--primary-color); color: white; }
-        .modal-footer { display: flex; gap: 10px; align-items: center; }
-        #previewDisplay {
-            flex-grow: 1; background: #fff; border: 1px solid var(--light-gray);
-            border-radius: 5px; padding: 10px; text-align: center; font-family: monospace;
-            font-weight: bold; font-size: 1.2em; min-height: 1.5em;
-        }
-        #insertBtn { font-weight: bold; }
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
 
-        /* --- FOCUS MODE: HIDE TITLE WHEN KEYBOARD IS VISIBLE --- */
-        body.keyboard-visible h1 {
-            height: 0;
-            margin: 0;
-            opacity: 0;
-            overflow: hidden;
-            pointer-events: none;
-        }
+        body.keyboard-visible h1 { height: 0; margin: 0; opacity: 0; overflow: hidden; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -137,60 +93,60 @@
     </div>
 
     <div class="toolbar">
-        <div class="controls transpose-controls">
-            <button id="transposeMinus" title="Transpose Down">-</button>
-            <input type="text" id="semitoneValue" value="0" readonly />
-            <button id="transposePlus" title="Transpose Up">+</button>
+        <div class="contextual-controls">
+            <div id="notesPanel" class="context-panel">
+                <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container"></div></div>
+                <div class="controls-row">
+                    <div class="radio-button-group">
+                        <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
+                        <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
+                    </div>
+                </div>
+            </div>
+            <div id="chordsPanel" class="context-panel">
+                <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
+                <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
+            </div>
+            <div id="toolsPanel" class="context-panel">
+                <div class="tools-grid">
+                    <div class="controls transpose-controls">
+                        <button id="transposeMinus" title="Transpose Down">-</button>
+                        <input type="text" id="semitoneValue" value="0" readonly />
+                        <button id="transposePlus" title="Transpose Up">+</button>
+                    </div>
+                    <div class="controls">
+                         <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
+                         <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
+                         <input type="file" id="fileInput" accept=".jms" style="display: none;" />
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="controls">
-             <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
-            <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
-            <input type="file" id="fileInput" accept=".jms" style="display: none;" />
+        <div class="main-nav">
+            <button class="nav-btn" data-panel="notesPanel">🎵 Notes</button>
+            <button class="nav-btn" data-panel="chordsPanel">🎸 Chords</button>
+            <button class="nav-btn" data-panel="toolsPanel">⚙️ Tools</button>
         </div>
-        <button id="addMusicBtn" title="Add Note or Chord">+ Add Music</button>
     </div>
-
-    <div id="paletteModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Music Palette</h3>
-                <button id="closePaletteBtn" title="Close">&times;</button>
-            </div>
-            <div class="radio-button-group" role="radiogroup" aria-label="Accidentals">
-                <label class="radio-button selected" title="Sharps"><input type="radio" name="paletteAccidental" value="sharp" checked />#</label>
-                <label class="radio-button" title="Flats"><input type="radio" name="paletteAccidental" value="flat" />♭</label>
-            </div>
-            <div id="palette-note-buttons"></div>
-            <div id="palette-chord-buttons"></div>
-            <div class="modal-footer">
-                <div id="previewDisplay"></div>
-                <button id="insertBtn">Insert</button>
-            </div>
-        </div>
-    </div>
-
 
     <script>
         // --- Element References ---
         const body = document.body;
         const inputTextArea = document.getElementById('inputTextArea');
         const semitoneValue = document.getElementById('semitoneValue');
+        const noteButtonsContainer = document.getElementById('note-buttons-container');
+        const noteButtonsContainerChords = document.getElementById('note-buttons-container-chords');
+        const chordButtonsContainer = document.getElementById('chord-buttons-container');
         const saveBtn = document.getElementById('saveBtn');
         const openBtn = document.getElementById('openBtn');
         const fileInput = document.getElementById('fileInput');
-        const addMusicBtn = document.getElementById('addMusicBtn');
-        const paletteModal = document.getElementById('paletteModal');
-        const closePaletteBtn = document.getElementById('closePaletteBtn');
-        const paletteNoteButtons = document.getElementById('palette-note-buttons');
-        const paletteChordButtons = document.getElementById('palette-chord-buttons');
-        const previewDisplay = document.getElementById('previewDisplay');
-        const insertBtn = document.getElementById('insertBtn');
+        const mainNav = document.querySelector('.main-nav');
+        const contextPanels = document.querySelectorAll('.context-panel');
 
         // --- State Variables ---
         let semitones = 0;
         let accidentalPreference = 'sharp';
-        let paletteRootNote = '';
-        let paletteExtension = '';
+        let insertionMode = 'notes';
         let initialWindowHeight = window.innerHeight;
         
         // --- Data ---
@@ -226,30 +182,34 @@
         }
         
         // --- UI Rendering ---
-        function renderPaletteNoteButtons() {
-            paletteNoteButtons.innerHTML = '';
+        function renderNoteButtons(container) {
+            container.innerHTML = '';
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
             notes.forEach(note => {
                 const btn = document.createElement('button');
-                btn.className = 'palette-btn';
+                btn.className = 'note-btn';
                 btn.innerHTML = formatNoteForDisplay(note);
                 btn.dataset.note = note;
-                paletteNoteButtons.appendChild(btn);
+                container.appendChild(btn);
             });
         }
-        function renderPaletteChordButtons() {
-            paletteChordButtons.innerHTML = '';
+        function renderAllNoteButtons() {
+            renderNoteButtons(noteButtonsContainer);
+            renderNoteButtons(noteButtonsContainerChords);
+        }
+        function renderChordButtons() {
+            chordButtonsContainer.innerHTML = '';
             chordExtensions.forEach(ext => {
                 const btn = document.createElement('button');
-                btn.className = 'palette-btn';
+                btn.className = 'chord-btn';
                 btn.textContent = ext;
                 btn.dataset.ext = ext;
-                paletteChordButtons.appendChild(btn);
+                chordButtonsContainer.appendChild(btn);
             });
         }
         
         // --- Editor Actions ---
-        function insertMusicUnit(note, extension) {
+        function insertMusicUnit(note, extension = '') {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
             const range = selection.getRangeAt(0);
@@ -271,60 +231,65 @@
             selection.addRange(range);
             unitSpan.scrollIntoView({ block: 'center' });
         }
-
-        function updatePreview() {
-            if (!paletteRootNote) {
-                previewDisplay.innerHTML = ''; return;
-            }
-            previewDisplay.innerHTML = formatNoteForDisplay(paletteRootNote) + paletteExtension;
-        }
         
         // --- Event Listeners ---
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
         
-        addMusicBtn.addEventListener('click', () => { paletteModal.classList.remove('hidden'); });
-        closePaletteBtn.addEventListener('click', () => { paletteModal.classList.add('hidden'); });
-        paletteModal.addEventListener('click', (e) => { if (e.target === paletteModal) paletteModal.classList.add('hidden'); });
+        const noteInsertHandler = (e) => {
+            const btn = e.target.closest('.note-btn');
+            if(btn) insertMusicUnit(btn.dataset.note);
+        };
+        noteButtonsContainer.addEventListener('click', noteInsertHandler);
+        noteButtonsContainerChords.addEventListener('click', noteInsertHandler);
 
-        document.querySelectorAll('input[name="paletteAccidental"]').forEach(radio =>
+        chordButtonsContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.chord-btn');
+            if (!btn) return;
+            const ext = btn.dataset.ext;
+            const selection = window.getSelection();
+            if (!selection.rangeCount || !selection.anchorNode) return;
+            let node = selection.anchorNode;
+            let offset = selection.anchorOffset;
+            let precedingNode = (node.nodeType === Node.TEXT_NODE && offset > 0) ? node.previousSibling : (node.childNodes[offset - 1] || node.previousSibling);
+            let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
+            if (lastUnit) {
+                const note = lastUnit.dataset.originalNote;
+                const newExt = (lastUnit.dataset.originalExtension || '') + ext;
+                lastUnit.classList.remove('blue-notes');
+                lastUnit.classList.add('red-chords');
+                lastUnit.dataset.originalExtension = newExt;
+                const transposedNote = transposeNote(note, semitones);
+                lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
+                lastUnit.scrollIntoView({ block: 'center' });
+            }
+        });
+
+        document.querySelectorAll('input[name="accidental"]').forEach(radio =>
             radio.addEventListener('change', (e) => {
                 accidentalPreference = e.target.value;
-                e.target.closest('.radio-button-group').querySelectorAll('.radio-button').forEach(r => r.classList.remove('selected'));
-                e.target.parentElement.classList.add('selected');
-                renderPaletteNoteButtons();
+                document.querySelectorAll('input[name="accidental"]').forEach(r => r.parentElement.classList.remove('selected'));
+                e.target.closest('.radio-button-group').querySelector(`[value="${accidentalPreference}"]`).parentElement.classList.add('selected');
+                renderAllNoteButtons();
                 updateTransposition();
             })
         );
         
-        paletteNoteButtons.addEventListener('click', e => {
-            const btn = e.target.closest('.palette-btn');
-            if (!btn) return;
-            paletteRootNote = btn.dataset.note;
-            paletteExtension = '';
-            paletteNoteButtons.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            paletteChordButtons.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
-            updatePreview();
-        });
-
-        paletteChordButtons.addEventListener('click', e => {
-            const btn = e.target.closest('.palette-btn');
-            if (!btn || !paletteRootNote) return;
-            paletteExtension += btn.dataset.ext;
-            btn.classList.add('selected');
-            updatePreview();
-        });
-
-        insertBtn.addEventListener('click', () => {
-            if (paletteRootNote) {
-                const transposedRoot = transposeNote(paletteRootNote, semitones);
-                insertMusicUnit(transposedRoot, paletteExtension);
+        inputTextArea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const selection = window.getSelection();
+                if (!selection.rangeCount) return;
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
+                const textNode = document.createTextNode(textToInsert);
+                range.insertNode(textNode);
+                range.setStartAfter(textNode);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
-            paletteRootNote = '';
-            paletteExtension = '';
-            updatePreview();
-            paletteModal.classList.add('hidden');
         });
 
         saveBtn.addEventListener('click', () => {
@@ -337,14 +302,11 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = filename.endsWith('.jms') ? filename : filename + '.jms';
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
             URL.revokeObjectURL(url);
         });
 
         openBtn.addEventListener('click', () => { fileInput.click(); });
-
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -361,21 +323,30 @@
             e.target.value = null;
         });
         
-        // --- Focus Mode to hide title when keyboard is up ---
+        mainNav.addEventListener('click', e => {
+            const targetBtn = e.target.closest('.nav-btn');
+            if (!targetBtn) return;
+            const targetPanelId = targetBtn.dataset.panel;
+            
+            mainNav.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            targetBtn.classList.add('active');
+
+            contextPanels.forEach(panel => panel.classList.toggle('active', panel.id === targetPanelId));
+        });
+
         function handleKeyboardVisibility() {
             if (!window.visualViewport) return;
-            // A common heuristic: if viewport is less than 90% of window, keyboard is likely open
             if (window.visualViewport.height < initialWindowHeight * 0.9) {
                 body.classList.add('keyboard-visible');
             } else {
                 body.classList.remove('keyboard-visible');
             }
         }
-
-        // --- Initial Setup ---
+        
         window.onload = () => {
-            renderPaletteNoteButtons();
-            renderPaletteChordButtons();
+            renderAllNoteButtons();
+            renderChordButtons();
+            document.querySelector('.nav-btn[data-panel="notesPanel"]').click(); // Activate notes tab by default
             if (window.visualViewport) {
                 initialWindowHeight = window.innerHeight;
                 window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
