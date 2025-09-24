@@ -65,12 +65,12 @@
         }
         .nav-btn.active { background-color: var(--primary-color); color: white; }
 
-        /* --- CORRECTED: Tool Panel Layout --- */
+        /* --- FINAL: Balanced Tool Panel --- */
         .tool-row {
             display: grid;
             gap: 5px;
         }
-        .tool-row.five-col { grid-template-columns: repeat(5, 1fr); }
+        .tool-row.six-col { grid-template-columns: repeat(6, 1fr); }
         .tool-row.two-col { grid-template-columns: repeat(2, 1fr); }
 
         .radio-button {
@@ -95,8 +95,9 @@
         input[type="text"] {
             background: #fff; color: var(--secondary-color); text-align: center; font-weight: bold;
         }
-        .tool-row button, .tool-row .radio-button {
+        .tool-row button, .tool-row .radio-button, .tool-row input {
             padding: 10px 5px;
+            height: 100%;
         }
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
         body.keyboard-visible h1 { height: 0; margin: 0; opacity: 0; overflow: hidden; pointer-events: none; }
@@ -119,10 +120,11 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
             </div>
             <div id="toolsPanel" class="context-panel">
-                <div class="tool-row five-col">
+                <div class="tool-row six-col">
                     <button id="transposeMinus" title="Transpose Down">-</button>
                     <input type="text" id="semitoneValue" value="0" readonly />
                     <button id="transposePlus" title="Transpose Up">+</button>
+                    <button id="resetButton" title="Reset Transposition">🔄</button>
                     <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
                     <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
                 </div>
@@ -153,6 +155,7 @@
         const fileInput = document.getElementById('fileInput');
         const mainNav = document.querySelector('.main-nav');
         const contextPanels = document.querySelectorAll('.context-panel');
+        const resetButton = document.getElementById('resetButton');
 
         // --- State Variables ---
         let semitones = 0;
@@ -250,6 +253,7 @@
         // --- Event Listeners ---
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
+        resetButton.addEventListener('click', () => { semitones = 0; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         
         const noteInsertHandler = (e) => {
             const btn = e.target.closest('.note-btn');
@@ -282,7 +286,7 @@
             radio.addEventListener('change', (e) => {
                 accidentalPreference = e.target.value;
                 document.querySelectorAll('input[name="accidental"]').forEach(r => r.parentElement.classList.remove('selected'));
-                e.target.closest('.radio-button-group').querySelector(`[value="${accidentalPreference}"]`).parentElement.classList.add('selected');
+                document.querySelector(`label[title="${e.target.value === 'sharp' ? 'Sharps' : 'Flats'}"]`).classList.add('selected');
                 renderAllNoteButtons();
                 updateTransposition();
                 inputTextArea.focus({ preventScroll: true });
