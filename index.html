@@ -65,12 +65,7 @@
         }
         .nav-btn.active { background-color: var(--primary-color); color: white; }
 
-        /* --- NEW: Balanced Tool Panel Grid --- */
-        #toolsPanel {
-            display: none; /* Keep the display:flex from .context-panel.active */
-            flex-direction: column;
-            gap: 5px;
-        }
+        /* --- CORRECTED: Tool Panel Layout --- */
         .tool-row {
             display: grid;
             gap: 5px;
@@ -78,8 +73,12 @@
         .tool-row.five-col { grid-template-columns: repeat(5, 1fr); }
         .tool-row.two-col { grid-template-columns: repeat(2, 1fr); }
 
-        .radio-button-group { display: flex; flex: 1; gap: 5px; }
-        .radio-button { flex: 1; text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold; border: 1px solid var(--light-gray); background: #fff; color: var(--secondary-color); border-radius: 5px; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: center; }
+        .radio-button {
+            text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold;
+            border: 1px solid var(--light-gray); background: #fff; color: var(--secondary-color);
+            border-radius: 5px; cursor: pointer; user-select: none;
+            display: flex; align-items: center; justify-content: center;
+        }
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
@@ -87,6 +86,7 @@
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
+
         button, input[type="text"] {
             background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em;
             border: 1px solid var(--light-gray); border-radius: 4px; box-sizing: border-box;
@@ -96,10 +96,9 @@
             background: #fff; color: var(--secondary-color); text-align: center; font-weight: bold;
         }
         .tool-row button, .tool-row .radio-button {
-            padding: 10px;
+            padding: 10px 5px;
         }
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
-
         body.keyboard-visible h1 { height: 0; margin: 0; opacity: 0; overflow: hidden; pointer-events: none; }
     </style>
 </head>
@@ -166,7 +165,7 @@
         const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
 
-        // --- Core Logic & UI Rendering ---
+        // --- Core Logic & UI ---
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
         function transposeNote(note, shift) {
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
