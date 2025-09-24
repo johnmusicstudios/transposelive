@@ -11,7 +11,6 @@
             --light-gray: #ccc;
             --bg-color: #f8f8f8;
             --toolbar-bg: #eef2f5;
-            --button-hover-bg: #3a7caf;
         }
         html, body {
             height: 100%;
@@ -28,6 +27,7 @@
         .main-content {
             flex-grow: 1;
             padding: 10px;
+            padding-bottom: 0;
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -36,9 +36,10 @@
             font-family: 'Georgia', serif;
             font-size: 1.5em;
             text-align: center;
-            margin: 0 0 15px 0;
+            margin: 0 0 10px 0;
             flex-shrink: 0;
             color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
         }
         #inputTextArea {
             flex-grow: 1;
@@ -56,6 +57,7 @@
             overflow-y: auto;
             resize: none;
         }
+        
         .toolbar {
             flex-shrink: 0;
             background: var(--toolbar-bg);
@@ -83,7 +85,7 @@
             justify-content: center;
         }
         #addMusicBtn {
-            grid-column: 1 / -1; /* Span full width */
+            grid-column: 1 / -1;
             font-weight: bold;
             padding: 12px;
         }
@@ -92,30 +94,15 @@
         .red-chords { color: #dc3545; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
 
-        /* --- NEW MODAL PALETTE STYLES --- */
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;
         }
         .modal-overlay.hidden { display: none; }
         .modal-content {
-            background: var(--bg-color);
-            border-radius: 8px;
-            padding: 15px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            background: var(--bg-color); border-radius: 8px; padding: 15px;
+            width: 90%; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; gap: 15px;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; }
         .modal-header h3 { margin: 0; color: var(--secondary-color); }
@@ -130,19 +117,20 @@
         .palette-btn.selected { background: var(--primary-color); color: white; }
         .modal-footer { display: flex; gap: 10px; align-items: center; }
         #previewDisplay {
-            flex-grow: 1;
-            background: #fff;
-            border: 1px solid var(--light-gray);
-            border-radius: 5px;
-            padding: 10px;
-            text-align: center;
-            font-family: monospace;
-            font-weight: bold;
-            font-size: 1.2em;
-            min-height: 1.5em;
+            flex-grow: 1; background: #fff; border: 1px solid var(--light-gray);
+            border-radius: 5px; padding: 10px; text-align: center; font-family: monospace;
+            font-weight: bold; font-size: 1.2em; min-height: 1.5em;
         }
         #insertBtn { font-weight: bold; }
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
+
+        /* --- NEW: Focus Mode Styles --- */
+        body.keyboard-visible h1 {
+            height: 0;
+            margin: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -213,6 +201,7 @@
         let accidentalPreference = 'sharp';
         let paletteRootNote = '';
         let paletteExtension = '';
+        let initialWindowHeight = window.innerHeight;
         
         // --- Data ---
         const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -287,13 +276,12 @@
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
-            unitSpan.scrollIntoView({ block: 'center', inline: 'nearest' });
+            unitSpan.scrollIntoView({ block: 'center' });
         }
 
         function updatePreview() {
             if (!paletteRootNote) {
-                previewDisplay.innerHTML = '';
-                return;
+                previewDisplay.innerHTML = ''; return;
             }
             previewDisplay.innerHTML = formatNoteForDisplay(paletteRootNote) + paletteExtension;
         }
@@ -302,17 +290,9 @@
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
         
-        addMusicBtn.addEventListener('click', () => {
-            paletteModal.classList.remove('hidden');
-        });
-        closePaletteBtn.addEventListener('click', () => {
-            paletteModal.classList.add('hidden');
-        });
-        paletteModal.addEventListener('click', (e) => {
-            if (e.target === paletteModal) { // Close if clicking on the overlay
-                paletteModal.classList.add('hidden');
-            }
-        });
+        addMusicBtn.addEventListener('click', () => { paletteModal.classList.remove('hidden'); });
+        closePaletteBtn.addEventListener('click', () => { paletteModal.classList.add('hidden'); });
+        paletteModal.addEventListener('click', (e) => { if (e.target === paletteModal) paletteModal.classList.add('hidden'); });
 
         document.querySelectorAll('input[name="paletteAccidental"]').forEach(radio =>
             radio.addEventListener('change', (e) => {
@@ -328,8 +308,7 @@
             const btn = e.target.closest('.palette-btn');
             if (!btn) return;
             paletteRootNote = btn.dataset.note;
-            paletteExtension = ''; // Reset extension when new root is chosen
-            // Visually select the button
+            paletteExtension = '';
             paletteNoteButtons.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             paletteChordButtons.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
@@ -338,19 +317,17 @@
 
         paletteChordButtons.addEventListener('click', e => {
             const btn = e.target.closest('.palette-btn');
-            if (!btn || !paletteRootNote) return; // Can't add extension without root
+            if (!btn || !paletteRootNote) return;
             paletteExtension += btn.dataset.ext;
-            btn.classList.add('selected'); // Can select multiple extensions
+            btn.classList.toggle('selected');
             updatePreview();
         });
 
         insertBtn.addEventListener('click', () => {
             if (paletteRootNote) {
-                // Apply current transposition before inserting
                 const transposedRoot = transposeNote(paletteRootNote, semitones);
                 insertMusicUnit(transposedRoot, paletteExtension);
             }
-            // Reset and close
             paletteRootNote = '';
             paletteExtension = '';
             updatePreview();
@@ -408,20 +385,28 @@
             e.target.value = null;
         });
 
-        viewModeBtn.addEventListener('click', () => {
-            body.classList.add('view-mode');
-            addMusicBtn.style.display = 'none';
-        });
-
-        editModeBtn.addEventListener('click', () => {
-            body.classList.remove('view-mode');
-            addMusicBtn.style.display = 'flex';
-        });
+        viewModeBtn.addEventListener('click', () => { addMusicBtn.style.display = 'none'; });
+        editModeBtn.addEventListener('click', () => { addMusicBtn.style.display = 'flex'; });
         
+        // --- NEW: Focus Mode to hide title when keyboard is up ---
+        function handleKeyboardVisibility() {
+            if (!window.visualViewport) return;
+            // A common heuristic: if viewport is less than 85% of window, keyboard is likely open
+            if (window.visualViewport.height < initialWindowHeight * 0.85) {
+                body.classList.add('keyboard-visible');
+            } else {
+                body.classList.remove('keyboard-visible');
+            }
+        }
+
         // --- Initial Setup ---
         window.onload = () => {
             renderPaletteNoteButtons();
             renderPaletteChordButtons();
+            if (window.visualViewport) {
+                initialWindowHeight = window.visualViewport.height;
+                window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
+            }
         };
     </script>
 </body>
