@@ -65,15 +65,14 @@
         }
         .nav-btn.active { background-color: var(--primary-color); color: white; }
 
-        /* --- CORRECTED: Tool Panel Layout using Flexbox --- */
         .tool-row {
             display: flex;
             gap: 5px;
             align-items: stretch;
         }
         .tool-row > * {
-            flex: 1; /* Distribute space equally */
-            min-width: 0; /* Allow items to shrink properly */
+            flex: 1; 
+            min-width: 0;
         }
 
         .radio-button {
@@ -127,9 +126,9 @@
                     <button id="transposeMinus" title="Transpose Down">-</button>
                     <input type="text" id="semitoneValue" value="0" readonly />
                     <button id="transposePlus" title="Transpose Up">+</button>
-                    <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
-                    <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
-                </div>
+                    <div class="radio-button selected" data-value="sharp" title="Sharps">#</div>
+                    <div class="radio-button" data-value="flat" title="Flats">♭</div>
+                    </div>
                 <div class="tool-row">
                     <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
                     <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
@@ -157,7 +156,7 @@
         const fileInput = document.getElementById('fileInput');
         const mainNav = document.querySelector('.main-nav');
         const contextPanels = document.querySelectorAll('.context-panel');
-        const toolsPanel = document.getElementById('toolsPanel'); // Added for keyboard fix
+        const toolsPanel = document.getElementById('toolsPanel');
 
         // --- State Variables ---
         let semitones = 0;
@@ -282,16 +281,25 @@
                 lastUnit.scrollIntoView({ block: 'center' });
             }
         });
+        
+        // FINAL FIX: New click handler for the div-based accidental buttons
+        toolsPanel.addEventListener('click', e => {
+            const radioBtn = e.target.closest('.radio-button[data-value]');
+            if (radioBtn) {
+                const newValue = radioBtn.dataset.value;
+                if (accidentalPreference === newValue) return;
 
-        document.querySelectorAll('input[name="accidental"]').forEach(radio =>
-            radio.addEventListener('change', (e) => {
-                accidentalPreference = e.target.value;
-                document.querySelectorAll('input[name="accidental"]').forEach(r => r.parentElement.classList.remove('selected'));
-                document.querySelector(`label[title="${e.target.value === 'sharp' ? 'Sharps' : 'Flats'}"]`).classList.add('selected');
+                accidentalPreference = newValue;
+                
+                toolsPanel.querySelectorAll('.radio-button[data-value]').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                radioBtn.classList.add('selected');
+
                 renderAllNoteButtons();
                 updateTransposition();
-            })
-        );
+            }
+        });
         
         mainNav.addEventListener('click', e => {
             const targetBtn = e.target.closest('.nav-btn');
@@ -303,8 +311,6 @@
         });
 
         // --- KEYBOARD BEHAVIOR FIXES ---
-        // The following 'mousedown' listeners prevent buttons from stealing focus from the
-        // text area. This ensures the keyboard's state (open or closed) is not changed.
         const preventFocusSteal = (e) => {
             if (e.target.closest('button') || e.target.closest('.radio-button') || e.target.closest('.nav-btn')) {
                 e.preventDefault();
@@ -313,7 +319,6 @@
         toolsPanel.addEventListener('mousedown', preventFocusSteal);
         mainNav.addEventListener('mousedown', preventFocusSteal);
         chordButtonsContainer.addEventListener('mousedown', preventFocusSteal);
-        // Note buttons already manage focus correctly via insertMusicUnit, so they don't need this.
         
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
