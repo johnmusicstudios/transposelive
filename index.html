@@ -36,6 +36,7 @@
             line-height: 1.6; white-space: pre-wrap; overflow-wrap: break-word;
             overflow-y: auto; resize: none;
         }
+        
         .toolbar {
             flex-shrink: 0; background: var(--toolbar-bg); border-top: 1px solid var(--light-gray);
             box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
@@ -64,12 +65,10 @@
         }
         .nav-btn.active { background-color: var(--primary-color); color: white; }
 
-        .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .tool-group { display: flex; flex-direction: column; gap: 5px; }
-        .tool-group .label { font-size: 0.75em; text-align: center; font-weight: bold; color: #666; margin-bottom: 2px; }
+        .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .transpose-controls { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 5px; }
         .radio-button-group { display: flex; flex: 1; gap: 5px; }
-        .radio-button { flex: 1; text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold; border: 1px solid var(--light-gray); background: #fff; color: var(--secondary-color); border-radius: 5px; cursor: pointer; user-select: none; }
+        .radio-button { flex: 1; text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold; border: 1px solid var(--light-gray); background: #fff; color: var(--secondary-color); border-radius: 5px; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: center; }
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
@@ -80,6 +79,8 @@
         button { background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         input[type="text"] { border: 1px solid var(--light-gray); border-radius: 4px; font-size: 1em; text-align: center; font-weight: bold; padding: 8px; color: var(--secondary-color); box-sizing: border-box; }
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
+        .controls { display: flex; gap: 5px; }
+        .controls button { flex: 1; }
 
         body.keyboard-visible h1 { height: 0; margin: 0; opacity: 0; overflow: hidden; pointer-events: none; }
     </style>
@@ -102,33 +103,21 @@
             </div>
             <div id="toolsPanel" class="context-panel">
                 <div class="tools-grid">
-                    <div class="tool-group">
-                        <div class="label">TRANSPOSE</div>
-                        <div class="controls transpose-controls">
-                            <button id="transposeMinus" title="Transpose Down">-</button>
-                            <input type="text" id="semitoneValue" value="0" readonly />
-                            <button id="transposePlus" title="Transpose Up">+</button>
-                        </div>
+                    <div class="transpose-controls">
+                        <button id="transposeMinus" title="Transpose Down">-</button>
+                        <input type="text" id="semitoneValue" value="0" readonly />
+                        <button id="transposePlus" title="Transpose Up">+</button>
                     </div>
-                     <div class="tool-group">
-                        <div class="label">ACCIDENTALS</div>
-                        <div class="radio-button-group">
-                            <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
-                            <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
-                        </div>
+                     <div class="radio-button-group">
+                        <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
+                        <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
                     </div>
-                    <div class="tool-group">
-                        <div class="label">SAVE</div>
-                        <div class="controls">
-                            <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
-                        </div>
+                    <div class="controls">
+                        <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
                     </div>
-                     <div class="tool-group">
-                        <div class="label">OPEN</div>
-                        <div class="controls">
-                            <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
-                            <input type="file" id="fileInput" accept=".jms" style="display: none;" />
-                        </div>
+                     <div class="controls">
+                        <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
+                        <input type="file" id="fileInput" accept=".jms" style="display: none;" />
                     </div>
                 </div>
             </div>
@@ -165,7 +154,7 @@
         const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
 
-        // --- Core Logic ---
+        // --- Core Logic & UI Rendering ---
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
         function transposeNote(note, shift) {
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
@@ -192,7 +181,6 @@
             } return note;
         }
         
-        // --- UI Rendering ---
         function renderNoteButtons(container) {
             container.innerHTML = '';
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
@@ -233,14 +221,33 @@
             unitSpan.contentEditable = false;
             unitSpan.innerHTML = formatNoteForDisplay(note) + extension;
             range.insertNode(unitSpan);
-            const spaceNode = document.createTextNode(' ');
             range.setStartAfter(unitSpan);
-            range.insertNode(spaceNode);
-            range.setStartAfter(spaceNode);
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
             unitSpan.scrollIntoView({ block: 'center' });
+        }
+
+        function findPrecedingMusicUnit() {
+            const selection = window.getSelection();
+            if (!selection.rangeCount || !selection.anchorNode) return null;
+            let node = selection.anchorNode;
+            let offset = selection.anchorOffset;
+
+            let currentNode = node;
+            while(currentNode && currentNode !== inputTextArea) {
+                let sibling = currentNode.previousSibling;
+                while(sibling) {
+                    if (sibling.nodeType === Node.ELEMENT_NODE) {
+                        if (sibling.matches && sibling.matches('.music-unit')) return sibling;
+                        const child = sibling.querySelector('.music-unit:last-child');
+                        if (child) return child;
+                    }
+                    sibling = sibling.previousSibling;
+                }
+                currentNode = currentNode.parentElement;
+            }
+            return null;
         }
         
         // --- Event Listeners ---
@@ -251,7 +258,8 @@
             const btn = e.target.closest('.note-btn');
             if(btn) {
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
-                insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined);
+                const isChord = insertionMode === 'chords';
+                insertMusicUnit(btn.dataset.note, isChord ? '' : undefined);
             }
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
@@ -261,11 +269,7 @@
             const btn = e.target.closest('.chord-btn');
             if (!btn) return;
             const ext = btn.dataset.ext;
-            const selection = window.getSelection();
-            if (!selection.rangeCount || !selection.anchorNode) return;
-            let node = selection.anchorNode;
-            let precedingNode = (node.nodeType === Node.TEXT_NODE && selection.anchorOffset > 0) ? node.previousSibling : (node.childNodes[selection.anchorOffset - 1] || node.previousSibling);
-            let lastUnit = (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
+            let lastUnit = findPrecedingMusicUnit();
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
