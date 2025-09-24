@@ -36,6 +36,7 @@
             line-height: 1.6; white-space: pre-wrap; overflow-wrap: break-word;
             overflow-y: auto; resize: none;
         }
+        
         .toolbar {
             flex-shrink: 0; background: var(--toolbar-bg); border-top: 1px solid var(--light-gray);
             box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
@@ -64,8 +65,22 @@
         }
         .nav-btn.active { background-color: var(--primary-color); color: white; }
 
-        .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .transpose-controls { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 5px; }
+        /* --- NEW: Balanced Tool Panel --- */
+        #toolsPanel .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+        #toolsPanel .controls-grid .wide {
+             grid-column: span 3;
+        }
+        #toolsPanel .controls-grid .full-width {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+
         .radio-button-group { display: flex; flex: 1; gap: 5px; }
         .radio-button { flex: 1; text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold; border: 1px solid var(--light-gray); background: #fff; color: var(--secondary-color); border-radius: 5px; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: center; }
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
@@ -75,11 +90,18 @@
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
-        button { background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        input[type="text"] { border: 1px solid var(--light-gray); border-radius: 4px; font-size: 1em; text-align: center; font-weight: bold; padding: 8px; color: var(--secondary-color); box-sizing: border-box; }
+        button, input[type="text"] {
+            background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em;
+            border: 1px solid var(--light-gray); border-radius: 4px; box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+        }
+        input[type="text"] {
+            background: #fff; color: var(--secondary-color); text-align: center; font-weight: bold;
+        }
+        .radio-button, #transposeMinus, #transposePlus {
+             font-size: 1.2em;
+        }
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
-        .controls { display: flex; gap: 5px; }
-        .controls button { flex: 1; }
 
         body.keyboard-visible h1 { height: 0; margin: 0; opacity: 0; overflow: hidden; pointer-events: none; }
     </style>
@@ -101,20 +123,16 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
             </div>
             <div id="toolsPanel" class="context-panel">
-                <div class="tools-grid">
-                    <div class="transpose-controls">
-                        <button id="transposeMinus" title="Transpose Down">-</button>
-                        <input type="text" id="semitoneValue" value="0" readonly />
-                        <button id="transposePlus" title="Transpose Up">+</button>
-                    </div>
-                     <div class="radio-button-group">
-                        <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
-                        <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
-                    </div>
-                    <div class="controls">
+                <div class="controls-grid">
+                    <button id="transposeMinus" title="Transpose Down">-</button>
+                    <input type="text" id="semitoneValue" value="0" readonly class="wide"/>
+                    <button id="transposePlus" title="Transpose Up">+</button>
+
+                    <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
+                    <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
+
+                    <div class="full-width">
                         <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
-                    </div>
-                     <div class="controls">
                         <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
                         <input type="file" id="fileInput" accept=".jms" style="display: none;" />
                     </div>
@@ -153,7 +171,7 @@
         const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
 
-        // --- Core Logic & UI Rendering ---
+        // --- Core Logic & UI ---
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
         function transposeNote(note, shift) {
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
@@ -207,23 +225,18 @@
         }
         
         // --- Editor Actions ---
-        function insertMusicUnit(note, extension) { // Note: extension can be undefined
+        function insertMusicUnit(note, extension = '') {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
             const range = selection.getRangeAt(0);
             range.deleteContents();
-            
-            // CORRECTED LOGIC: An empty string for extension means it's a chord root.
-            const colorClass = (extension !== undefined) ? 'red-chords' : 'blue-notes';
-            const finalExtension = extension || '';
-
+            const colorClass = extension || insertionMode === 'chords' ? 'red-chords' : 'blue-notes';
             const unitSpan = document.createElement('span');
             unitSpan.className = `music-unit ${colorClass}`;
             unitSpan.dataset.originalNote = note;
-            unitSpan.dataset.originalExtension = finalExtension;
+            unitSpan.dataset.originalExtension = extension;
             unitSpan.contentEditable = false;
-            unitSpan.innerHTML = formatNoteForDisplay(note) + finalExtension;
-
+            unitSpan.innerHTML = formatNoteForDisplay(note) + extension;
             range.insertNode(unitSpan);
             range.setStartAfter(unitSpan);
             range.collapse(true);
@@ -232,6 +245,14 @@
             unitSpan.scrollIntoView({ block: 'center' });
         }
         
+        function findPrecedingMusicUnit() {
+            const selection = window.getSelection();
+            if (!selection.rangeCount || !selection.anchorNode) return null;
+            let node = selection.anchorNode;
+            let precedingNode = (node.nodeType === Node.TEXT_NODE && selection.anchorOffset > 0) ? node.previousSibling : (node.childNodes[selection.anchorOffset - 1] || node.previousSibling);
+            return (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
+        }
+
         // --- Event Listeners ---
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
@@ -240,9 +261,7 @@
             const btn = e.target.closest('.note-btn');
             if(btn) {
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
-                const isChord = insertionMode === 'chords';
-                insertMusicUnit(btn.dataset.note, isChord ? '' : undefined);
-                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
+                insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined);
             }
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
@@ -252,11 +271,7 @@
             const btn = e.target.closest('.chord-btn');
             if (!btn) return;
             const ext = btn.dataset.ext;
-            
-            // ROBUST FIX: Find the last music unit in the entire editor.
-            const allUnits = inputTextArea.querySelectorAll('.music-unit');
-            const lastUnit = allUnits.length > 0 ? allUnits[allUnits.length - 1] : null;
-
+            let lastUnit = findPrecedingMusicUnit();
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
@@ -266,7 +281,6 @@
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 lastUnit.scrollIntoView({ block: 'center' });
-                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
             }
         });
 
