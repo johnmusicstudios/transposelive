@@ -250,8 +250,10 @@
             return (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
         }
 
-        document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
-        document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); inputTextArea.focus({ preventScroll: true }); });
+        // --- FINAL FIX START: Removed focus() calls that were opening the keyboard ---
+        document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
+        document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
+        // --- FINAL FIX END ---
         
         const noteInsertHandler = (e) => {
             const btn = e.target.closest('.note-btn');
@@ -351,9 +353,6 @@
             mainNav.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             targetBtn.classList.add('active');
             contextPanels.forEach(panel => panel.classList.toggle('active', panel.id === targetPanelId));
-            // --- FINAL FIX START: Removed focus() call that was opening the keyboard ---
-            // inputTextArea.focus({ preventScroll: true });
-            // --- FINAL FIX END ---
         });
         
         function handleKeyboardVisibility() {
