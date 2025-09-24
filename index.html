@@ -263,6 +263,15 @@
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
         noteButtonsContainerChords.addEventListener('click', noteInsertHandler);
 
+        // --- FIX #2 START: Prevent chord extension buttons from stealing focus ---
+        // This prevents the blur event on the text area, keeping the keyboard open.
+        chordButtonsContainer.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.chord-btn')) {
+                e.preventDefault();
+            }
+        });
+        // --- FIX #2 END ---
+
         chordButtonsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.chord-btn');
             if (!btn) return;
@@ -287,7 +296,9 @@
                 document.querySelector(`label[title="${e.target.value === 'sharp' ? 'Sharps' : 'Flats'}"]`).classList.add('selected');
                 renderAllNoteButtons();
                 updateTransposition();
-                inputTextArea.focus({ preventScroll: true });
+                // --- FIX #1 START: Removed focus() call that was opening the keyboard ---
+                // inputTextArea.focus({ preventScroll: true }); 
+                // --- FIX #1 END ---
             })
         );
         
