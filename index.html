@@ -36,7 +36,6 @@
             line-height: 1.6; white-space: pre-wrap; overflow-wrap: break-word;
             overflow-y: auto; resize: none;
         }
-        
         .toolbar {
             flex-shrink: 0; background: var(--toolbar-bg); border-top: 1px solid var(--light-gray);
             box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
@@ -208,46 +207,29 @@
         }
         
         // --- Editor Actions ---
-        function insertMusicUnit(note, extension = '') {
+        function insertMusicUnit(note, extension) { // Note: extension can be undefined
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
             const range = selection.getRangeAt(0);
             range.deleteContents();
-            const colorClass = extension ? 'red-chords' : 'blue-notes';
+            
+            // CORRECTED LOGIC: An empty string for extension means it's a chord root.
+            const colorClass = (extension !== undefined) ? 'red-chords' : 'blue-notes';
+            const finalExtension = extension || '';
+
             const unitSpan = document.createElement('span');
             unitSpan.className = `music-unit ${colorClass}`;
             unitSpan.dataset.originalNote = note;
-            unitSpan.dataset.originalExtension = extension;
+            unitSpan.dataset.originalExtension = finalExtension;
             unitSpan.contentEditable = false;
-            unitSpan.innerHTML = formatNoteForDisplay(note) + extension;
+            unitSpan.innerHTML = formatNoteForDisplay(note) + finalExtension;
+
             range.insertNode(unitSpan);
             range.setStartAfter(unitSpan);
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
             unitSpan.scrollIntoView({ block: 'center' });
-        }
-
-        function findPrecedingMusicUnit() {
-            const selection = window.getSelection();
-            if (!selection.rangeCount || !selection.anchorNode) return null;
-            let node = selection.anchorNode;
-            let offset = selection.anchorOffset;
-
-            let currentNode = node;
-            while(currentNode && currentNode !== inputTextArea) {
-                let sibling = currentNode.previousSibling;
-                while(sibling) {
-                    if (sibling.nodeType === Node.ELEMENT_NODE) {
-                        if (sibling.matches && sibling.matches('.music-unit')) return sibling;
-                        const child = sibling.querySelector('.music-unit:last-child');
-                        if (child) return child;
-                    }
-                    sibling = sibling.previousSibling;
-                }
-                currentNode = currentNode.parentElement;
-            }
-            return null;
         }
         
         // --- Event Listeners ---
@@ -260,6 +242,7 @@
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
                 const isChord = insertionMode === 'chords';
                 insertMusicUnit(btn.dataset.note, isChord ? '' : undefined);
+                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
             }
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
@@ -269,7 +252,11 @@
             const btn = e.target.closest('.chord-btn');
             if (!btn) return;
             const ext = btn.dataset.ext;
-            let lastUnit = findPrecedingMusicUnit();
+            
+            // ROBUST FIX: Find the last music unit in the entire editor.
+            const allUnits = inputTextArea.querySelectorAll('.music-unit');
+            const lastUnit = allUnits.length > 0 ? allUnits[allUnits.length - 1] : null;
+
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
@@ -279,6 +266,7 @@
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 lastUnit.scrollIntoView({ block: 'center' });
+                inputTextArea.focus({ preventScroll: true }); // KEYBOARD FIX
             }
         });
 
