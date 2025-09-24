@@ -65,21 +65,18 @@
         }
         .nav-btn.active { background-color: var(--primary-color); color: white; }
 
-        /* --- NEW: Balanced Tool Panel --- */
-        #toolsPanel .controls-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
+        /* --- NEW: Balanced Tool Panel Grid --- */
+        #toolsPanel {
+            display: none; /* Keep the display:flex from .context-panel.active */
+            flex-direction: column;
             gap: 5px;
         }
-        #toolsPanel .controls-grid .wide {
-             grid-column: span 3;
-        }
-        #toolsPanel .controls-grid .full-width {
-            grid-column: 1 / -1;
+        .tool-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 5px;
         }
+        .tool-row.five-col { grid-template-columns: repeat(5, 1fr); }
+        .tool-row.two-col { grid-template-columns: repeat(2, 1fr); }
 
         .radio-button-group { display: flex; flex: 1; gap: 5px; }
         .radio-button { flex: 1; text-align: center; padding: 8px; font-size: 1.1em; font-weight: bold; border: 1px solid var(--light-gray); background: #fff; color: var(--secondary-color); border-radius: 5px; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: center; }
@@ -98,8 +95,8 @@
         input[type="text"] {
             background: #fff; color: var(--secondary-color); text-align: center; font-weight: bold;
         }
-        .radio-button, #transposeMinus, #transposePlus {
-             font-size: 1.2em;
+        .tool-row button, .tool-row .radio-button {
+            padding: 10px;
         }
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
 
@@ -123,19 +120,17 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
             </div>
             <div id="toolsPanel" class="context-panel">
-                <div class="controls-grid">
+                <div class="tool-row five-col">
                     <button id="transposeMinus" title="Transpose Down">-</button>
-                    <input type="text" id="semitoneValue" value="0" readonly class="wide"/>
+                    <input type="text" id="semitoneValue" value="0" readonly />
                     <button id="transposePlus" title="Transpose Up">+</button>
-
                     <label class="radio-button selected" title="Sharps"><input type="radio" name="accidental" value="sharp" checked />#</label>
                     <label class="radio-button" title="Flats"><input type="radio" name="accidental" value="flat" />♭</label>
-
-                    <div class="full-width">
-                        <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
-                        <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
-                        <input type="file" id="fileInput" accept=".jms" style="display: none;" />
-                    </div>
+                </div>
+                <div class="tool-row two-col">
+                    <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
+                    <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
+                    <input type="file" id="fileInput" accept=".jms" style="display: none;" />
                 </div>
             </div>
         </div>
@@ -171,7 +166,7 @@
         const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
 
-        // --- Core Logic & UI ---
+        // --- Core Logic & UI Rendering ---
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
         function transposeNote(note, shift) {
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
