@@ -84,20 +84,10 @@
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
-        /* --- FINAL ALIGNMENT & SPACING FIX START --- */
-        .music-unit { 
-            position: relative; 
-            display: inline-block; /* Let it size naturally but provide a positioning context */
-        }
+        .music-unit { display: inline; white-space: nowrap; user-select: none; }
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
-        .sharp, .flat { 
-            position: absolute;
-            top: -0.3em;
-            left: 0.7em; /* Increased space for a cleaner look */
-            font-size: 0.8em;
-        }
-        /* --- FINAL ALIGNMENT & SPACING FIX END --- */
+        .sharp, .flat { font-size: 0.75em; vertical-align: super; }
 
         button, input[type="text"] {
             background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em;
@@ -236,6 +226,7 @@
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
 
+            // FIX 1: Prevent inserting notes/chords outside the main text area.
             if (!inputTextArea.contains(selection.anchorNode)) {
                 return;
             }
@@ -387,6 +378,7 @@
                 body.classList.add('keyboard-visible');
             } else {
                 body.classList.remove('keyboard-visible');
+                // FIX 2: When keyboard is hidden, remove focus from the text area.
                 if (document.activeElement === inputTextArea) {
                     inputTextArea.blur();
                 }
