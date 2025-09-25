@@ -84,13 +84,27 @@
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
-        /* --- CSS HAS BEEN REVERTED --- */
+        /* --- NEW CSS FOR GHOST SCAFFOLDING --- */
         .music-unit {
-            display: inline-block; /* Kept for stability */
-            white-space: nowrap;
+            position: relative;
+            display: inline-block;
+            vertical-align: middle; /* Better aligns with text */
             user-select: none;
         }
-        /* --- END OF CSS CHANGE --- */
+        .music-unit .ghost-scaffold {
+            visibility: hidden;
+        }
+        .music-unit .visible-note {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* --- END OF NEW CSS --- */
 
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
@@ -175,6 +189,7 @@
         const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
+        const WIDEST_NOTE = 'D♭'; // Used for the ghost scaffold to set a consistent width
 
         // --- Core Logic & UI ---
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
@@ -184,30 +199,39 @@
             if (idx === -1) return note;
             return notes[(idx + shift + 12) % 12];
         }
+
+        // --- REBUILT RENDERING LOGIC ---
         function updateTransposition() {
             semitoneValue.value = semitones;
             inputTextArea.querySelectorAll('.music-unit').forEach(unit => {
+                const visibleNoteSpan = unit.querySelector('.visible-note');
+                if (!visibleNoteSpan) return;
+
                 const originalNote = unit.dataset.originalNote;
                 const originalExtension = unit.dataset.originalExtension || '';
+
                 if (originalNote) {
                     const transposedNote = transposeNote(originalNote, semitones);
-                    unit.innerHTML = formatNoteForDisplay(transposedNote) + originalExtension;
+                    visibleNoteSpan.innerHTML = formatNoteForDisplay(transposedNote) + originalExtension;
                 }
             });
         }
 
-        // --- THIS IS THE JAVASCRIPT FIX ---
         function formatNoteForDisplay(note) {
-            if (note.length > 1) { // It's a sharp or flat note like 'C#'
+            if (note.length > 1) {
                 const accidental = note.slice(1);
                 const accidentalClass = accidental === '#' ? 'sharp' : 'flat';
                 return `${note.charAt(0)}<span class="${accidentalClass}">${accidental}</span>`;
-            } else { // It's a natural note like 'C'
-                // Add a non-breaking space to make it the same width as a sharp/flat note
-                return `${note}&nbsp;`;
             }
+            return note;
         }
-        // --- END OF JAVASCRIPT FIX ---
+
+        function createMusicUnitHTML(note, extension = '') {
+            const ghostHTML = `<span class="ghost-scaffold">${formatNoteForDisplay(WIDEST_NOTE)}</span>`;
+            const visibleHTML = `<span class="visible-note">${formatNoteForDisplay(note)}${extension}</span>`;
+            return `${ghostHTML}${visibleHTML}`;
+        }
+        // --- END OF REBUILT LOGIC ---
         
         function renderNoteButtons(container) {
             container.innerHTML = '';
@@ -257,7 +281,10 @@
             unitSpan.dataset.originalNote = note;
             unitSpan.dataset.originalExtension = extension;
             unitSpan.contentEditable = false;
-            unitSpan.innerHTML = formatNoteForDisplay(transposeNote(note, semitones)) + extension;
+
+            const transposedNote = transposeNote(note, semitones);
+            unitSpan.innerHTML = createMusicUnitHTML(transposedNote, extension);
+
             range.insertNode(unitSpan);
 
             const spaceNode = document.createTextNode('\u00A0');
@@ -309,13 +336,17 @@
             const ext = btn.dataset.ext;
             let lastUnit = findPrecedingMusicUnit();
             if (lastUnit) {
+                const visibleNoteSpan = lastUnit.querySelector('.visible-note');
+                if (!visibleNoteSpan) return;
+
                 const note = lastUnit.dataset.originalNote;
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
                 lastUnit.classList.remove('blue-notes');
                 lastUnit.classList.add('red-chords');
                 lastUnit.dataset.originalExtension = newExt;
+
                 const transposedNote = transposeNote(note, semitones);
-                lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
+                visibleNoteSpan.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 lastUnit.scrollIntoView({ block: 'nearest', inline: 'nearest' });
             }
         });
