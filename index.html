@@ -128,7 +128,7 @@
                     <button id="transposePlus" title="Transpose Up">+</button>
                     <div class="radio-button selected" data-value="sharp" title="Sharps">#</div>
                     <div class="radio-button" data-value="flat" title="Flats">♭</div>
-                    </div>
+                </div>
                 <div class="tool-row">
                     <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
                     <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
@@ -225,6 +225,12 @@
         function insertMusicUnit(note, extension = '') {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
+
+            // FIX 1: Prevent inserting notes/chords outside the main text area.
+            if (!inputTextArea.contains(selection.anchorNode)) {
+                return;
+            }
+
             const range = selection.getRangeAt(0);
             range.deleteContents();
             const colorClass = extension || insertionMode === 'chords' ? 'red-chords' : 'blue-notes';
@@ -282,7 +288,6 @@
             }
         });
         
-        // FINAL FIX: New click handler for the div-based accidental buttons
         toolsPanel.addEventListener('click', e => {
             const radioBtn = e.target.closest('.radio-button[data-value]');
             if (radioBtn) {
@@ -310,7 +315,6 @@
             contextPanels.forEach(panel => panel.classList.toggle('active', panel.id === targetPanelId));
         });
 
-        // --- KEYBOARD BEHAVIOR FIXES ---
         const preventFocusSteal = (e) => {
             if (e.target.closest('button') || e.target.closest('.radio-button') || e.target.closest('.nav-btn')) {
                 e.preventDefault();
@@ -374,6 +378,10 @@
                 body.classList.add('keyboard-visible');
             } else {
                 body.classList.remove('keyboard-visible');
+                // FIX 2: When keyboard is hidden, remove focus from the text area.
+                if (document.activeElement === inputTextArea) {
+                    inputTextArea.blur();
+                }
             }
         }
         
