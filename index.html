@@ -30,10 +30,14 @@
             transition: all 0.2s ease-in-out;
         }
         #inputTextArea {
-            flex-grow: 1; width: 100%; font-family: 'Courier New', Courier, monospace;
+            flex-grow: 1; width: 100%; 
+            /* MODIFIED: Switched to a monospace font for perfect alignment */
+            font-family: 'Courier New', Courier, monospace; 
             font-size: 1.1em; border: 1px solid var(--light-gray); padding: 12px;
             border-radius: 6px; outline: none; box-sizing: border-box; background: #fff;
-            line-height: 1.6; white-space: pre-wrap; overflow-wrap: break-word;
+            line-height: 1.8; /* MODIFIED: Increased line-height for better readability */
+            white-space: pre; /* MODIFIED: Changed to 'pre' to respect all spaces */
+            overflow-wrap: break-word;
             overflow-y: auto; resize: none;
         }
         
@@ -84,7 +88,22 @@
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
-        .music-unit { display: inline; white-space: nowrap; user-select: none; }
+        /* MODIFIED: Core logic for alignment */
+        .music-unit {
+            display: inline-block; /* Treat as a box */
+            min-width: 3ch;      /* Give it a minimum width of 3 characters */
+            text-align: center;  /* Center the note/chord within the box */
+            white-space: nowrap; 
+            user-select: none;
+        }
+        
+        /* ADDED: Style for the bar line to also have a fixed width */
+        .bar-line {
+            display: inline-block;
+            min-width: 2ch;
+            text-align: center;
+        }
+
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
@@ -171,8 +190,8 @@
         const contextPanels = document.querySelectorAll('.context-panel');
         const toolsPanel = document.getElementById('toolsPanel');
         const notesPanel = document.getElementById('notesPanel');
-        const chordsPanel = document.getElementById('chordsPanel'); // ADDED: Reference for focus prevention
-        const contextualControls = document.querySelector('.contextual-controls'); // ADDED: For bar line button
+        const chordsPanel = document.getElementById('chordsPanel'); 
+        const contextualControls = document.querySelector('.contextual-controls'); 
 
         // --- State Variables ---
         let semitones = 0;
@@ -269,10 +288,9 @@
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
-            unitSpan.scrollIntoView({ block: 'center' });
+            unitSpan.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
 
-        // ADDED: Function to insert a bar line
         function insertBarLine() {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
@@ -281,6 +299,7 @@
             range.deleteContents();
 
             const barNode = document.createElement('b');
+            barNode.className = 'bar-line'; // MODIFIED: Added class for styling
             barNode.textContent = '|';
             const spaceNode = document.createTextNode(' ');
 
@@ -314,7 +333,6 @@
         }
         notesPanel.addEventListener('click', handleOctaveSelection);
 
-        // ADDED: Listener for the new bar line button
         contextualControls.addEventListener('click', (e) => {
             if (e.target.closest('.bar-line-btn')) {
                 insertBarLine();
@@ -326,9 +344,8 @@
         
         const noteInsertHandler = (e) => {
             const btn = e.target.closest('.note-btn');
-            if(btn && !btn.classList.contains('bar-line-btn')) { // MODIFIED: Ensure it's not the bar line btn
+            if(btn && !btn.classList.contains('bar-line-btn')) {
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
-                // MODIFIED: If inserting a chord, always use the default octave (0).
                 const octaveForInsertion = insertionMode === 'chords' ? 0 : currentOctave;
                 insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined, octaveForInsertion);
             }
@@ -350,7 +367,7 @@
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote, octave) + newExt;
-                lastUnit.scrollIntoView({ block: 'center' });
+                lastUnit.scrollIntoView({ block: 'center', inline: 'nearest' });
             }
         });
         
@@ -387,22 +404,13 @@
         mainNav.addEventListener('mousedown', preventFocusSteal);
         chordButtonsContainer.addEventListener('mousedown', preventFocusSteal);
         notesPanel.addEventListener('mousedown', preventFocusSteal);
-        chordsPanel.addEventListener('mousedown', preventFocusSteal); // ADDED: Prevents keyboard closing in Chords tab
+        chordsPanel.addEventListener('mousedown', preventFocusSteal); 
         
+        // MODIFIED: Simplified keydown handler. Using a monospace font with white-space: pre handles this better.
         inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === 'Enter') {
                 e.preventDefault();
-                const selection = window.getSelection();
-                if (!selection.rangeCount) return;
-                const range = selection.getRangeAt(0);
-                range.deleteContents();
-                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
-                const textNode = document.createTextNode(textToInsert);
-                range.insertNode(textNode);
-                range.setStartAfter(textNode);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
+                document.execCommand('insertLineBreak');
             }
         });
 
