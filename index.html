@@ -84,22 +84,20 @@
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
-        /* --- FINAL ALIGNMENT FIX START --- */
+        /* --- FINAL ALIGNMENT & SPACING FIX START --- */
         .music-unit { 
             position: relative; 
-            display: inline-block;
-            width: 1ch;
-            text-align: center;
+            display: inline-block; /* Let it size naturally but provide a positioning context */
         }
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
         .sharp, .flat { 
             position: absolute;
             top: -0.3em;
-            left: 0.5em;
+            left: 0.7em; /* Increased space for a cleaner look */
             font-size: 0.8em;
         }
-        /* --- FINAL ALIGNMENT FIX END --- */
+        /* --- FINAL ALIGNMENT & SPACING FIX END --- */
 
         button, input[type="text"] {
             background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em;
