@@ -84,13 +84,19 @@
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
-     .music-unit {
-  display: inline-block; /* Allows setting a width */
-  min-width: 2ch;      /* Sets minimum width to 2 characters */
-  text-align: center;  /* Centers the note (G, F#, etc.) inside */
-  white-space: nowrap;
-  user-select: none;
-}
+        /* --- THIS IS THE FIX --- */
+        .music-unit {
+            display: inline-block; /* Changed from 'inline' to allow width and alignment */
+            min-width: 2ch;        /* Ensures a minimum width of 2 characters */
+            text-align: center;    /* Centers single-character notes like 'G' */
+            white-space: nowrap;
+            user-select: none;
+        }
+        /* --- END OF FIX --- */
+
+        .blue-notes { color: var(--primary-color); font-weight: bold; }
+        .red-chords { color: #dc3545; font-weight: bold; }
+        .sharp, .flat { font-size: 0.75em; vertical-align: super; }
 
         button, input[type="text"] {
             background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em;
@@ -231,7 +237,14 @@
 
             // FIX 1: Prevent inserting notes/chords outside the main text area.
             if (!inputTextArea.contains(selection.anchorNode)) {
-                return;
+                 // If not focused in the text area, move focus to the end
+                inputTextArea.focus();
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(inputTextArea);
+                range.collapse(false); // false to collapse to the end
+                sel.removeAllRanges();
+                sel.addRange(range);
             }
 
             const range = selection.getRangeAt(0);
@@ -244,18 +257,35 @@
             unitSpan.contentEditable = false;
             unitSpan.innerHTML = formatNoteForDisplay(note) + extension;
             range.insertNode(unitSpan);
-            range.setStartAfter(unitSpan);
+
+            // Add a space after the music unit to allow typing
+            const spaceNode = document.createTextNode('\u00A0'); // Non-breaking space
+            range.insertNode(spaceNode);
+            
+            range.setStartAfter(spaceNode);
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
-            unitSpan.scrollIntoView({ block: 'center' });
+            unitSpan.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
         
         function findPrecedingMusicUnit() {
             const selection = window.getSelection();
             if (!selection.rangeCount || !selection.anchorNode) return null;
             let node = selection.anchorNode;
-            let precedingNode = (node.nodeType === Node.TEXT_NODE && selection.anchorOffset > 0) ? node.previousSibling : (node.childNodes[selection.anchorOffset - 1] || node.previousSibling);
+            
+            // Start with the node just before the cursor
+            let precedingNode = (node.nodeType === Node.TEXT_NODE && selection.anchorOffset > 0) 
+                                ? node.previousSibling 
+                                : (node.hasChildNodes() && selection.anchorOffset > 0)
+                                    ? node.childNodes[selection.anchorOffset - 1] 
+                                    : node.previousSibling;
+
+            // Handle cases where cursor is in a text node after a space after a music unit
+            if(precedingNode && precedingNode.nodeType === Node.TEXT_NODE && /^\s*$/.test(precedingNode.textContent)){
+                precedingNode = precedingNode.previousSibling;
+            }
+
             return (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
         }
 
@@ -287,7 +317,7 @@
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
-                lastUnit.scrollIntoView({ block: 'center' });
+                lastUnit.scrollIntoView({ block: 'nearest', inline: 'nearest' });
             }
         });
         
@@ -323,26 +353,30 @@
                 e.preventDefault();
             }
         };
-        toolsPanel.addEventListener('mousedown', preventFocusSteal);
-        mainNav.addEventListener('mousedown', preventFocusSteal);
-        chordButtonsContainer.addEventListener('mousedown', preventFocusSteal);
+        document.querySelector('.toolbar').addEventListener('mousedown', preventFocusSteal);
         
+        // This makes sure backspace can delete the whole music unit span
         inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
+            if (e.key === 'Backspace') {
                 const selection = window.getSelection();
-                if (!selection.rangeCount) return;
+                if (!selection.rangeCount || !selection.isCollapsed) return;
+                
                 const range = selection.getRangeAt(0);
-                range.deleteContents();
-                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
-                const textNode = document.createTextNode(textToInsert);
-                range.insertNode(textNode);
-                range.setStartAfter(textNode);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
+                const node = range.startContainer;
+
+                // Check if the cursor is right after a music-unit span
+                if (range.startOffset === 0 && node.previousSibling && node.previousSibling.matches && node.previousSibling.matches('.music-unit')) {
+                    e.preventDefault();
+                    node.previousSibling.remove();
+                } else if (node.nodeType === Node.TEXT_NODE && range.startOffset === 1 && /\s/.test(node.textContent) && node.previousSibling && node.previousSibling.matches('.music-unit')) {
+                    // This handles deleting the space after the unit, and then the unit itself
+                     e.preventDefault();
+                     node.previousSibling.remove();
+                     node.remove();
+                }
             }
         });
+
 
         saveBtn.addEventListener('click', () => {
             const filename = prompt("Enter a name for your song:", "my-song.jms");
