@@ -84,31 +84,13 @@
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
-        /* --- NEW CSS FOR GHOST SCAFFOLDING --- */
-        .music-unit {
-            position: relative;
-            display: inline-block;
-            vertical-align: middle; /* Better aligns with text */
-            user-select: none;
-        }
-        .music-unit .ghost-scaffold {
-            visibility: hidden;
-        }
-        .music-unit .visible-note {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        /* --- END OF NEW CSS --- */
-
+        .music-unit { display: inline; white-space: nowrap; user-select: none; }
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
+        /* */
+        sup, sub { font-size: 0.7em; font-weight: normal; vertical-align: 0.3em; }
+        sub { vertical-align: -0.3em; }
 
         button, input[type="text"] {
             background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em;
@@ -136,9 +118,19 @@
     <div class="toolbar">
         <div class="contextual-controls">
             <div id="notesPanel" class="context-panel">
+                <div class="tool-row" id="octave-selector-notes">
+                    <div class="radio-button" data-octave="-1">Low</div>
+                    <div class="radio-button selected" data-octave="0">Mid</div>
+                    <div class="radio-button" data-octave="1">High</div>
+                </div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container"></div></div>
             </div>
             <div id="chordsPanel" class="context-panel">
+                <div class="tool-row" id="octave-selector-chords">
+                    <div class="radio-button" data-octave="-1">Low</div>
+                    <div class="radio-button selected" data-octave="0">Mid</div>
+                    <div class="radio-button" data-octave="1">High</div>
+                </div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
             </div>
@@ -183,13 +175,13 @@
         let semitones = 0;
         let accidentalPreference = 'sharp';
         let insertionMode = 'notes';
+        let currentOctave = 0; // <-- ADDED: State for selected octave
         let initialWindowHeight = window.innerHeight;
         
         // --- Data ---
         const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const flatNotes  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         const chordExtensions = ['m', 'maj7', 'm7', '7', 'dim', 'aug', 'sus4', 'sus2', '6', '9'];
-        const WIDEST_NOTE = 'D♭'; // Used for the ghost scaffold to set a consistent width
 
         // --- Core Logic & UI ---
         function noteIndex(note) { return sharpNotes.indexOf(note) !== -1 ? sharpNotes.indexOf(note) : flatNotes.indexOf(note); }
@@ -199,39 +191,37 @@
             if (idx === -1) return note;
             return notes[(idx + shift + 12) % 12];
         }
-
-        // --- REBUILT RENDERING LOGIC ---
         function updateTransposition() {
             semitoneValue.value = semitones;
             inputTextArea.querySelectorAll('.music-unit').forEach(unit => {
-                const visibleNoteSpan = unit.querySelector('.visible-note');
-                if (!visibleNoteSpan) return;
-
                 const originalNote = unit.dataset.originalNote;
                 const originalExtension = unit.dataset.originalExtension || '';
-
+                const originalOctave = parseInt(unit.dataset.originalOctave || 0, 10); // MODIFIED: Read octave
                 if (originalNote) {
                     const transposedNote = transposeNote(originalNote, semitones);
-                    visibleNoteSpan.innerHTML = formatNoteForDisplay(transposedNote) + originalExtension;
+                    // MODIFIED: Pass octave to display function
+                    unit.innerHTML = formatNoteForDisplay(transposedNote, originalOctave) + originalExtension;
                 }
             });
         }
-
-        function formatNoteForDisplay(note) {
+        // MODIFIED: Function now accepts octave and formats it
+        function formatNoteForDisplay(note, octave = 0) {
+            let output = '';
             if (note.length > 1) {
                 const accidental = note.slice(1);
                 const accidentalClass = accidental === '#' ? 'sharp' : 'flat';
-                return `${note.charAt(0)}<span class="${accidentalClass}">${accidental}</span>`;
+                output = `${note.charAt(0)}<span class="${accidentalClass}">${accidental}</span>`;
+            } else {
+                output = note;
             }
-            return note;
-        }
 
-        function createMusicUnitHTML(note, extension = '') {
-            const ghostHTML = `<span class="ghost-scaffold">${formatNoteForDisplay(WIDEST_NOTE)}</span>`;
-            const visibleHTML = `<span class="visible-note">${formatNoteForDisplay(note)}${extension}</span>`;
-            return `${ghostHTML}${visibleHTML}`;
+            if (octave == 1) {
+                output += '<sup>1</sup>';
+            } else if (octave == -1) {
+                output += '<sub>1</sub>';
+            }
+            return output;
         }
-        // --- END OF REBUILT LOGIC ---
         
         function renderNoteButtons(container) {
             container.innerHTML = '';
@@ -239,6 +229,7 @@
             notes.forEach(note => {
                 const btn = document.createElement('button');
                 btn.className = 'note-btn';
+                // MODIFIED: Use the formatter to display default (middle octave) notes on buttons
                 btn.innerHTML = formatNoteForDisplay(note);
                 btn.dataset.note = note;
                 container.appendChild(btn);
@@ -259,18 +250,13 @@
             });
         }
         
-        function insertMusicUnit(note, extension = '') {
+        // MODIFIED: Function now accepts octave and saves it to a data attribute
+        function insertMusicUnit(note, extension = '', octave = 0) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
 
             if (!inputTextArea.contains(selection.anchorNode)) {
-                inputTextArea.focus();
-                const range = document.createRange();
-                const sel = window.getSelection();
-                range.selectNodeContents(inputTextArea);
-                range.collapse(false);
-                sel.removeAllRanges();
-                sel.addRange(range);
+                return;
             }
 
             const range = selection.getRangeAt(0);
@@ -280,42 +266,41 @@
             unitSpan.className = `music-unit ${colorClass}`;
             unitSpan.dataset.originalNote = note;
             unitSpan.dataset.originalExtension = extension;
+            unitSpan.dataset.originalOctave = octave; // ADDED: Store the original octave
             unitSpan.contentEditable = false;
-
-            const transposedNote = transposeNote(note, semitones);
-            unitSpan.innerHTML = createMusicUnitHTML(transposedNote, extension);
-
+            unitSpan.innerHTML = formatNoteForDisplay(note, octave) + extension; // MODIFIED: Pass octave
             range.insertNode(unitSpan);
-
-            const spaceNode = document.createTextNode('\u00A0');
-            range.insertNode(spaceNode);
-            
-            range.setStartAfter(spaceNode);
+            range.setStartAfter(unitSpan);
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
-            unitSpan.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            unitSpan.scrollIntoView({ block: 'center' });
         }
         
         function findPrecedingMusicUnit() {
             const selection = window.getSelection();
             if (!selection.rangeCount || !selection.anchorNode) return null;
             let node = selection.anchorNode;
-            
-            let precedingNode = (node.nodeType === Node.TEXT_NODE && selection.anchorOffset > 0) 
-                                ? node.previousSibling 
-                                : (node.hasChildNodes() && selection.anchorOffset > 0)
-                                    ? node.childNodes[selection.anchorOffset - 1] 
-                                    : node.previousSibling;
-
-            if(precedingNode && precedingNode.nodeType === Node.TEXT_NODE && /^\s*$/.test(precedingNode.textContent)){
-                precedingNode = precedingNode.previousSibling;
-            }
-
+            let precedingNode = (node.nodeType === Node.TEXT_NODE && selection.anchorOffset > 0) ? node.previousSibling : (node.childNodes[selection.anchorOffset - 1] || node.previousSibling);
             return (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE) ? precedingNode.closest('.music-unit') : null;
         }
 
         // --- Event Listeners ---
+
+        // ADDED: Handler for new octave selector buttons
+        function handleOctaveSelection(e) {
+            const radioBtn = e.target.closest('.radio-button[data-octave]');
+            if (radioBtn) {
+                currentOctave = parseInt(radioBtn.dataset.octave, 10);
+                // Sync both octave selectors so they show the same state
+                document.querySelectorAll('.radio-button[data-octave]').forEach(btn => {
+                    btn.classList.toggle('selected', btn.dataset.octave == currentOctave);
+                });
+            }
+        }
+        document.getElementById('notesPanel').addEventListener('click', handleOctaveSelection);
+        document.getElementById('chordsPanel').addEventListener('click', handleOctaveSelection);
+
 
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
@@ -324,7 +309,8 @@
             const btn = e.target.closest('.note-btn');
             if(btn) {
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
-                insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined);
+                // MODIFIED: Pass the current octave state when inserting a new note
+                insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined, currentOctave);
             }
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
@@ -336,18 +322,16 @@
             const ext = btn.dataset.ext;
             let lastUnit = findPrecedingMusicUnit();
             if (lastUnit) {
-                const visibleNoteSpan = lastUnit.querySelector('.visible-note');
-                if (!visibleNoteSpan) return;
-
                 const note = lastUnit.dataset.originalNote;
+                const octave = parseInt(lastUnit.dataset.originalOctave || 0, 10); // MODIFIED: Read octave
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
                 lastUnit.classList.remove('blue-notes');
                 lastUnit.classList.add('red-chords');
                 lastUnit.dataset.originalExtension = newExt;
-
                 const transposedNote = transposeNote(note, semitones);
-                visibleNoteSpan.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
-                lastUnit.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                // MODIFIED: Pass octave to display formatter to preserve it
+                lastUnit.innerHTML = formatNoteForDisplay(transposedNote, octave) + newExt;
+                lastUnit.scrollIntoView({ block: 'center' });
             }
         });
         
@@ -383,27 +367,26 @@
                 e.preventDefault();
             }
         };
-        document.querySelector('.toolbar').addEventListener('mousedown', preventFocusSteal);
+        toolsPanel.addEventListener('mousedown', preventFocusSteal);
+        mainNav.addEventListener('mousedown', preventFocusSteal);
+        chordButtonsContainer.addEventListener('mousedown', preventFocusSteal);
         
         inputTextArea.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace') {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
                 const selection = window.getSelection();
-                if (!selection.rangeCount || !selection.isCollapsed) return;
-                
+                if (!selection.rangeCount) return;
                 const range = selection.getRangeAt(0);
-                const node = range.startContainer;
-
-                if (range.startOffset === 0 && node.previousSibling && node.previousSibling.matches && node.previousSibling.matches('.music-unit')) {
-                    e.preventDefault();
-                    node.previousSibling.remove();
-                } else if (node.nodeType === Node.TEXT_NODE && range.startOffset === 1 && /\s/.test(node.textContent) && node.previousSibling && node.previousSibling.matches('.music-unit')) {
-                     e.preventDefault();
-                     node.previousSibling.remove();
-                     node.remove();
-                }
+                range.deleteContents();
+                const textToInsert = (e.key === 'Enter') ? '\n' : ' ';
+                const textNode = document.createTextNode(textToInsert);
+                range.insertNode(textNode);
+                range.setStartAfter(textNode);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
         });
-
 
         saveBtn.addEventListener('click', () => {
             const filename = prompt("Enter a name for your song:", "my-song.jms");
