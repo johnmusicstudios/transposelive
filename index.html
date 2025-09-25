@@ -88,7 +88,6 @@
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
-        /* */
         sup, sub { font-size: 0.7em; font-weight: normal; vertical-align: 0.3em; }
         sub { vertical-align: -0.3em; }
 
@@ -126,11 +125,6 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container"></div></div>
             </div>
             <div id="chordsPanel" class="context-panel">
-                <div class="tool-row" id="octave-selector-chords">
-                    <div class="radio-button" data-octave="-1">Low</div>
-                    <div class="radio-button selected" data-octave="0">Mid</div>
-                    <div class="radio-button" data-octave="1">High</div>
-                </div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
             </div>
@@ -170,12 +164,13 @@
         const mainNav = document.querySelector('.main-nav');
         const contextPanels = document.querySelectorAll('.context-panel');
         const toolsPanel = document.getElementById('toolsPanel');
+        const notesPanel = document.getElementById('notesPanel'); // ADDED: Direct reference for event listener
 
         // --- State Variables ---
         let semitones = 0;
         let accidentalPreference = 'sharp';
         let insertionMode = 'notes';
-        let currentOctave = 0; // <-- ADDED: State for selected octave
+        let currentOctave = 0; 
         let initialWindowHeight = window.innerHeight;
         
         // --- Data ---
@@ -196,15 +191,13 @@
             inputTextArea.querySelectorAll('.music-unit').forEach(unit => {
                 const originalNote = unit.dataset.originalNote;
                 const originalExtension = unit.dataset.originalExtension || '';
-                const originalOctave = parseInt(unit.dataset.originalOctave || 0, 10); // MODIFIED: Read octave
+                const originalOctave = parseInt(unit.dataset.originalOctave || 0, 10); 
                 if (originalNote) {
                     const transposedNote = transposeNote(originalNote, semitones);
-                    // MODIFIED: Pass octave to display function
                     unit.innerHTML = formatNoteForDisplay(transposedNote, originalOctave) + originalExtension;
                 }
             });
         }
-        // MODIFIED: Function now accepts octave and formats it
         function formatNoteForDisplay(note, octave = 0) {
             let output = '';
             if (note.length > 1) {
@@ -229,7 +222,6 @@
             notes.forEach(note => {
                 const btn = document.createElement('button');
                 btn.className = 'note-btn';
-                // MODIFIED: Use the formatter to display default (middle octave) notes on buttons
                 btn.innerHTML = formatNoteForDisplay(note);
                 btn.dataset.note = note;
                 container.appendChild(btn);
@@ -250,7 +242,6 @@
             });
         }
         
-        // MODIFIED: Function now accepts octave and saves it to a data attribute
         function insertMusicUnit(note, extension = '', octave = 0) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
@@ -266,9 +257,9 @@
             unitSpan.className = `music-unit ${colorClass}`;
             unitSpan.dataset.originalNote = note;
             unitSpan.dataset.originalExtension = extension;
-            unitSpan.dataset.originalOctave = octave; // ADDED: Store the original octave
+            unitSpan.dataset.originalOctave = octave; 
             unitSpan.contentEditable = false;
-            unitSpan.innerHTML = formatNoteForDisplay(note, octave) + extension; // MODIFIED: Pass octave
+            unitSpan.innerHTML = formatNoteForDisplay(note, octave) + extension; 
             range.insertNode(unitSpan);
             range.setStartAfter(unitSpan);
             range.collapse(true);
@@ -287,20 +278,17 @@
 
         // --- Event Listeners ---
 
-        // ADDED: Handler for new octave selector buttons
         function handleOctaveSelection(e) {
             const radioBtn = e.target.closest('.radio-button[data-octave]');
             if (radioBtn) {
                 currentOctave = parseInt(radioBtn.dataset.octave, 10);
-                // Sync both octave selectors so they show the same state
-                document.querySelectorAll('.radio-button[data-octave]').forEach(btn => {
+                notesPanel.querySelectorAll('.radio-button[data-octave]').forEach(btn => {
                     btn.classList.toggle('selected', btn.dataset.octave == currentOctave);
                 });
             }
         }
-        document.getElementById('notesPanel').addEventListener('click', handleOctaveSelection);
-        document.getElementById('chordsPanel').addEventListener('click', handleOctaveSelection);
-
+        notesPanel.addEventListener('click', handleOctaveSelection);
+        // REMOVED: Event listener for octave selector in chords panel is no longer needed.
 
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
@@ -309,7 +297,6 @@
             const btn = e.target.closest('.note-btn');
             if(btn) {
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
-                // MODIFIED: Pass the current octave state when inserting a new note
                 insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined, currentOctave);
             }
         };
@@ -323,13 +310,12 @@
             let lastUnit = findPrecedingMusicUnit();
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
-                const octave = parseInt(lastUnit.dataset.originalOctave || 0, 10); // MODIFIED: Read octave
+                const octave = parseInt(lastUnit.dataset.originalOctave || 0, 10); 
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
                 lastUnit.classList.remove('blue-notes');
                 lastUnit.classList.add('red-chords');
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
-                // MODIFIED: Pass octave to display formatter to preserve it
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote, octave) + newExt;
                 lastUnit.scrollIntoView({ block: 'center' });
             }
@@ -370,6 +356,7 @@
         toolsPanel.addEventListener('mousedown', preventFocusSteal);
         mainNav.addEventListener('mousedown', preventFocusSteal);
         chordButtonsContainer.addEventListener('mousedown', preventFocusSteal);
+        notesPanel.addEventListener('mousedown', preventFocusSteal); // ADDED: This prevents the keyboard from closing
         
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
