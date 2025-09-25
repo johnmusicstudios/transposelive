@@ -117,6 +117,9 @@
     <div class="toolbar">
         <div class="contextual-controls">
             <div id="notesPanel" class="context-panel">
+                <div class="tool-row">
+                    <button class="note-btn bar-line-btn" style="flex-grow: 0; min-width: 60px;"><b>|</b></button>
+                </div>
                 <div class="tool-row" id="octave-selector-notes">
                     <div class="radio-button" data-octave="-1">Low</div>
                     <div class="radio-button selected" data-octave="0">Mid</div>
@@ -125,6 +128,9 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container"></div></div>
             </div>
             <div id="chordsPanel" class="context-panel">
+                <div class="tool-row">
+                    <button class="note-btn bar-line-btn" style="flex-grow: 0; min-width: 60px;"><b>|</b></button>
+                </div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
             </div>
@@ -164,7 +170,9 @@
         const mainNav = document.querySelector('.main-nav');
         const contextPanels = document.querySelectorAll('.context-panel');
         const toolsPanel = document.getElementById('toolsPanel');
-        const notesPanel = document.getElementById('notesPanel'); // ADDED: Direct reference for event listener
+        const notesPanel = document.getElementById('notesPanel');
+        const chordsPanel = document.getElementById('chordsPanel'); // ADDED: Reference for focus prevention
+        const contextualControls = document.querySelector('.contextual-controls'); // ADDED: For bar line button
 
         // --- State Variables ---
         let semitones = 0;
@@ -244,11 +252,7 @@
         
         function insertMusicUnit(note, extension = '', octave = 0) {
             const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-
-            if (!inputTextArea.contains(selection.anchorNode)) {
-                return;
-            }
+            if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
 
             const range = selection.getRangeAt(0);
             range.deleteContents();
@@ -266,6 +270,27 @@
             selection.removeAllRanges();
             selection.addRange(range);
             unitSpan.scrollIntoView({ block: 'center' });
+        }
+
+        // ADDED: Function to insert a bar line
+        function insertBarLine() {
+            const selection = window.getSelection();
+            if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
+
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+
+            const barNode = document.createElement('b');
+            barNode.textContent = '|';
+            const spaceNode = document.createTextNode(' ');
+
+            range.insertNode(spaceNode);
+            range.insertNode(barNode);
+
+            range.setStartAfter(spaceNode);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
         }
         
         function findPrecedingMusicUnit() {
@@ -288,16 +313,24 @@
             }
         }
         notesPanel.addEventListener('click', handleOctaveSelection);
-        // REMOVED: Event listener for octave selector in chords panel is no longer needed.
+
+        // ADDED: Listener for the new bar line button
+        contextualControls.addEventListener('click', (e) => {
+            if (e.target.closest('.bar-line-btn')) {
+                insertBarLine();
+            }
+        });
 
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
         
         const noteInsertHandler = (e) => {
             const btn = e.target.closest('.note-btn');
-            if(btn) {
+            if(btn && !btn.classList.contains('bar-line-btn')) { // MODIFIED: Ensure it's not the bar line btn
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
-                insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined, currentOctave);
+                // MODIFIED: If inserting a chord, always use the default octave (0).
+                const octaveForInsertion = insertionMode === 'chords' ? 0 : currentOctave;
+                insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined, octaveForInsertion);
             }
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
@@ -326,14 +359,11 @@
             if (radioBtn) {
                 const newValue = radioBtn.dataset.value;
                 if (accidentalPreference === newValue) return;
-
                 accidentalPreference = newValue;
-                
                 toolsPanel.querySelectorAll('.radio-button[data-value]').forEach(btn => {
                     btn.classList.remove('selected');
                 });
                 radioBtn.classList.add('selected');
-
                 renderAllNoteButtons();
                 updateTransposition();
             }
@@ -356,7 +386,8 @@
         toolsPanel.addEventListener('mousedown', preventFocusSteal);
         mainNav.addEventListener('mousedown', preventFocusSteal);
         chordButtonsContainer.addEventListener('mousedown', preventFocusSteal);
-        notesPanel.addEventListener('mousedown', preventFocusSteal); // ADDED: This prevents the keyboard from closing
+        notesPanel.addEventListener('mousedown', preventFocusSteal);
+        chordsPanel.addEventListener('mousedown', preventFocusSteal); // ADDED: Prevents keyboard closing in Chords tab
         
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
