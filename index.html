@@ -93,7 +93,6 @@
             display: inline-block;
             white-space: nowrap; 
             user-select: none;
-            /* MODIFIED: Removed margin for tighter default spacing */
             margin: 0;
         }
         
@@ -124,7 +123,6 @@
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
         body.keyboard-visible h1 { height: 0; margin: 0; opacity: 0; overflow: hidden; pointer-events: none; }
 
-        /* ADDED: Media query to reduce font size on small screens for better density */
         @media (max-width: 600px) {
             #inputTextArea {
                 font-size: 0.95em;
@@ -156,9 +154,6 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container"></div></div>
             </div>
             <div id="chordsPanel" class="context-panel">
-                <div class="tool-row">
-                    <button class="note-btn bar-line-btn" style="flex-grow: 0; min-width: 60px;"><b>|</b></button>
-                </div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
             </div>
@@ -269,7 +264,6 @@
             });
         }
         
-        // MODIFIED: Removed automatic space insertion for denser layout.
         function insertMusicUnit(note, extension = '', octave = 0) {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
@@ -284,22 +278,23 @@
             unitSpan.contentEditable = false;
 
             const classList = ['music-unit'];
+            // MODIFIED: Logic to ensure chords are always red and never have octave colors.
             if (extension || insertionMode === 'chords') {
                 classList.push('red-chords');
             } else {
                 classList.push('blue-notes');
-            }
-            if (octave === 1) {
-                classList.push('high-octave');
-            } else if (octave === -1) {
-                classList.push('low-octave');
+                // Only apply octave colors to notes, not chords
+                if (octave === 1) {
+                    classList.push('high-octave');
+                } else if (octave === -1) {
+                    classList.push('low-octave');
+                }
             }
             unitSpan.className = classList.join(' ');
             
             unitSpan.innerHTML = formatNoteForDisplay(note) + extension; 
             range.insertNode(unitSpan);
 
-            // Set cursor right after the inserted note
             range.setStartAfter(unitSpan);
             range.collapse(true);
             selection.removeAllRanges();
@@ -307,7 +302,6 @@
             unitSpan.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
 
-        // MODIFIED: Removed automatic space insertion for denser layout.
         function insertBarLine() {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
@@ -321,7 +315,6 @@
             
             range.insertNode(barNode);
 
-            // Set cursor right after the inserted bar line
             range.setStartAfter(barNode);
             range.collapse(true);
             selection.removeAllRanges();
@@ -411,15 +404,17 @@
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
-                lastUnit.classList.remove('blue-notes');
+                
+                // MODIFIED: When converting a note to a chord, remove ALL note-specific classes
+                lastUnit.classList.remove('blue-notes', 'high-octave', 'low-octave');
                 lastUnit.classList.add('red-chords');
+                
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 
                 const selection = window.getSelection();
                 const range = document.createRange();
-                // MODIFIED: Simplified cursor placement as space nodes are gone
                 range.setStartAfter(lastUnit);
                 range.collapse(true);
                 selection.removeAllRanges();
