@@ -135,7 +135,7 @@
         <div class="contextual-controls">
             <div id="notesPanel" class="context-panel">
                  <div class="tool-row">
-                    <button class="note-btn bar-line-btn" style="flex-grow: 0.5;"><b>|</b></button>
+                    <button class="note-btn bar-line-btn"><b>|</b></button>
                     <button class="note-btn tag-btn"><b>CHORUS</b></button>
                     <button class="note-btn tag-btn"><b>VERSE</b></button>
                     <button class="note-btn tag-btn"><b>BRIDGE</b></button>
@@ -149,10 +149,7 @@
             </div>
             <div id="chordsPanel" class="context-panel">
                  <div class="tool-row">
-                    <button class="note-btn bar-line-btn" style="flex-grow: 0.5;"><b>|</b></button>
-                    <button class="note-btn tag-btn"><b>CHORUS</b></button>
-                    <button class="note-btn tag-btn"><b>VERSE</b></button>
-                    <button class="note-btn tag-btn"><b>BRIDGE</b></button>
+                    <button class="note-btn bar-line-btn" style="flex-grow: 0; min-width: 60px;"><b>|</b></button>
                 </div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
@@ -326,7 +323,7 @@
             selection.addRange(range);
         }
 
-        // ADDED: Function to insert section tags like [CHORUS]
+        // MODIFIED: Simplified to insert a simple bold tag without brackets or special styling.
         function insertTag(tagText) {
             document.execCommand('insertLineBreak');
 
@@ -335,10 +332,7 @@
             const range = selection.getRangeAt(0);
             
             const tagNode = document.createElement('b');
-            tagNode.textContent = `[${tagText}]`;
-            tagNode.style.color = '#6c757d';
-            tagNode.style.userSelect = 'none';
-            tagNode.contentEditable = false;
+            tagNode.textContent = tagText;
             
             range.insertNode(tagNode);
             range.setStartAfter(tagNode);
@@ -380,7 +374,6 @@
         }
         notesPanel.addEventListener('click', handleOctaveSelection);
 
-        // MODIFIED: Added handler for new tag buttons
         contextualControls.addEventListener('click', (e) => {
             if (e.target.closest('.bar-line-btn')) {
                 insertBarLine();
