@@ -148,8 +148,8 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container"></div></div>
             </div>
             <div id="chordsPanel" class="context-panel">
-                <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="chord-buttons-container"></div></div>
+                <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
             </div>
             <div id="toolsPanel" class="context-panel">
                 <div class="tool-row">
@@ -232,21 +232,19 @@
             return note;
         }
         
-        // MODIFIED: Function now builds the entire button row dynamically, including |, notes, and tags.
+        // MODIFIED: Function now builds the full button row for BOTH notes and chords tabs.
         function renderNoteButtons(container) {
-            container.innerHTML = ''; // Start fresh
+            container.innerHTML = ''; 
 
-            const isNotesPanel = container.id === 'note-buttons-container';
+            const isUtilityButtonRow = container.id === 'note-buttons-container' || container.id === 'note-buttons-container-chords';
 
-            if (isNotesPanel) {
-                // 1. Create and prepend the bar line button
+            if (isUtilityButtonRow) {
                 const barBtn = document.createElement('button');
                 barBtn.className = 'note-btn bar-line-btn';
                 barBtn.innerHTML = '<b>|</b>';
                 container.appendChild(barBtn);
             }
 
-            // 2. Render the actual note buttons (C, C#, etc.)
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
             notes.forEach(note => {
                 const btn = document.createElement('button');
@@ -256,8 +254,7 @@
                 container.appendChild(btn);
             });
 
-            if (isNotesPanel) {
-                // 3. Create and append the section tag buttons
+            if (isUtilityButtonRow) {
                 const tags = ['CHORUS', 'VERSE', 'BRIDGE'];
                 tags.forEach(tagText => {
                     const tagBtn = document.createElement('button');
@@ -377,32 +374,27 @@
         }
         notesPanel.addEventListener('click', handleOctaveSelection);
 
-        // This listener is now on the whole note container
-        noteButtonsContainer.addEventListener('click', (e) => {
-             if (e.target.closest('.bar-line-btn')) {
-                insertBarLine();
-                return;
-            }
-            const tagBtn = e.target.closest('.tag-btn');
-            if (tagBtn) {
-                insertTag(tagBtn.textContent);
-            }
-        });
-
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
         
-        const noteInsertHandler = (e) => {
+        // MODIFIED: A single, universal handler for the note/utility rows in both panels.
+        const universalButtonHandler = (e) => {
             const btn = e.target.closest('.note-btn');
-            // Make sure it's a note and not one of the other utility buttons
-            if(btn && !btn.classList.contains('bar-line-btn') && !btn.classList.contains('tag-btn')) {
+            if (!btn) return;
+
+            if (btn.classList.contains('bar-line-btn')) {
+                insertBarLine();
+            } else if (btn.classList.contains('tag-btn')) {
+                insertTag(btn.textContent);
+            } else { // It's a note button
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
                 const octaveForInsertion = insertionMode === 'chords' ? 0 : currentOctave;
                 insertMusicUnit(btn.dataset.note, '', octaveForInsertion);
             }
         };
-        noteButtonsContainer.addEventListener('click', noteInsertHandler);
-        noteButtonsContainerChords.addEventListener('click', noteInsertHandler);
+        noteButtonsContainer.addEventListener('click', universalButtonHandler);
+        noteButtonsContainerChords.addEventListener('click', universalButtonHandler);
+
 
         chordButtonsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.chord-btn');
