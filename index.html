@@ -11,6 +11,9 @@
             --light-gray: #ccc;
             --bg-color: #f8f8f8;
             --toolbar-bg: #eef2f5;
+            /* ADDED: New color variables for octaves */
+            --high-octave-color: hotpink;
+            --low-octave-color: orange;
         }
         html, body {
             height: 100%; margin: 0; overflow: hidden;
@@ -31,12 +34,11 @@
         }
         #inputTextArea {
             flex-grow: 1; width: 100%; 
-            /* MODIFIED: Switched to a monospace font for perfect alignment */
             font-family: 'Courier New', Courier, monospace; 
             font-size: 1.1em; border: 1px solid var(--light-gray); padding: 12px;
             border-radius: 6px; outline: none; box-sizing: border-box; background: #fff;
-            line-height: 1.8; /* MODIFIED: Increased line-height for better readability */
-            white-space: pre; /* MODIFIED: Changed to 'pre' to respect all spaces */
+            line-height: 1.8;
+            white-space: pre;
             overflow-wrap: break-word;
             overflow-y: auto; resize: none;
         }
@@ -88,16 +90,14 @@
         .radio-button.selected { background: var(--primary-color); color: white; border-color: var(--primary-color); }
         input[type="radio"] { display: none; }
 
-        /* MODIFIED: Core logic for alignment */
         .music-unit {
-            display: inline-block; /* Treat as a box */
-            min-width: 3ch;      /* Give it a minimum width of 3 characters */
-            text-align: center;  /* Center the note/chord within the box */
+            display: inline-block;
+            min-width: 3ch;   
+            text-align: center; 
             white-space: nowrap; 
             user-select: none;
         }
         
-        /* ADDED: Style for the bar line to also have a fixed width */
         .bar-line {
             display: inline-block;
             min-width: 2ch;
@@ -106,9 +106,13 @@
 
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
+        
+        /* MODIFIED: Added specific color rules for high and low octaves */
+        .high-octave { color: var(--high-octave-color); }
+        .low-octave  { color: var(--low-octave-color); }
+
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
-        sup, sub { font-size: 0.7em; font-weight: normal; vertical-align: 0.3em; }
-        sub { vertical-align: -0.3em; }
+        /* MODIFIED: Removed sup and sub styles as they are no longer used for octaves */
 
         button, input[type="text"] {
             background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em;
@@ -218,29 +222,22 @@
             inputTextArea.querySelectorAll('.music-unit').forEach(unit => {
                 const originalNote = unit.dataset.originalNote;
                 const originalExtension = unit.dataset.originalExtension || '';
-                const originalOctave = parseInt(unit.dataset.originalOctave || 0, 10); 
                 if (originalNote) {
                     const transposedNote = transposeNote(originalNote, semitones);
-                    unit.innerHTML = formatNoteForDisplay(transposedNote, originalOctave) + originalExtension;
+                    // MODIFIED: Call formatNoteForDisplay without the octave argument
+                    unit.innerHTML = formatNoteForDisplay(transposedNote) + originalExtension;
                 }
             });
         }
-        function formatNoteForDisplay(note, octave = 0) {
-            let output = '';
+
+        // MODIFIED: Simplified function to no longer handle octaves, only sharps/flats.
+        function formatNoteForDisplay(note) {
             if (note.length > 1) {
                 const accidental = note.slice(1);
                 const accidentalClass = accidental === '#' ? 'sharp' : 'flat';
-                output = `${note.charAt(0)}<span class="${accidentalClass}">${accidental}</span>`;
-            } else {
-                output = note;
+                return `${note.charAt(0)}<span class="${accidentalClass}">${accidental}</span>`;
             }
-
-            if (octave == 1) {
-                output += '<sup>1</sup>';
-            } else if (octave == -1) {
-                output += '<sub>1</sub>';
-            }
-            return output;
+            return note;
         }
         
         function renderNoteButtons(container) {
@@ -275,14 +272,29 @@
 
             const range = selection.getRangeAt(0);
             range.deleteContents();
-            const colorClass = extension || insertionMode === 'chords' ? 'red-chords' : 'blue-notes';
+
             const unitSpan = document.createElement('span');
-            unitSpan.className = `music-unit ${colorClass}`;
             unitSpan.dataset.originalNote = note;
             unitSpan.dataset.originalExtension = extension;
             unitSpan.dataset.originalOctave = octave; 
             unitSpan.contentEditable = false;
-            unitSpan.innerHTML = formatNoteForDisplay(note, octave) + extension; 
+
+            // MODIFIED: Dynamically build class list to include octave colors
+            const classList = ['music-unit'];
+            if (extension || insertionMode === 'chords') {
+                classList.push('red-chords');
+            } else {
+                classList.push('blue-notes');
+            }
+            if (octave === 1) {
+                classList.push('high-octave');
+            } else if (octave === -1) {
+                classList.push('low-octave');
+            }
+            unitSpan.className = classList.join(' ');
+            
+            // MODIFIED: Call formatNoteForDisplay without octave
+            unitSpan.innerHTML = formatNoteForDisplay(note) + extension; 
             range.insertNode(unitSpan);
             range.setStartAfter(unitSpan);
             range.collapse(true);
@@ -299,7 +311,7 @@
             range.deleteContents();
 
             const barNode = document.createElement('b');
-            barNode.className = 'bar-line'; // MODIFIED: Added class for styling
+            barNode.className = 'bar-line';
             barNode.textContent = '|';
             const spaceNode = document.createTextNode(' ');
 
@@ -347,7 +359,7 @@
             if(btn && !btn.classList.contains('bar-line-btn')) {
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
                 const octaveForInsertion = insertionMode === 'chords' ? 0 : currentOctave;
-                insertMusicUnit(btn.dataset.note, insertionMode === 'chords' ? '' : undefined, octaveForInsertion);
+                insertMusicUnit(btn.dataset.note, '', octaveForInsertion); // Pass empty string for extension
             }
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
@@ -360,13 +372,13 @@
             let lastUnit = findPrecedingMusicUnit();
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
-                const octave = parseInt(lastUnit.dataset.originalOctave || 0, 10); 
                 const newExt = (lastUnit.dataset.originalExtension || '') + ext;
                 lastUnit.classList.remove('blue-notes');
                 lastUnit.classList.add('red-chords');
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
-                lastUnit.innerHTML = formatNoteForDisplay(transposedNote, octave) + newExt;
+                // MODIFIED: Call formatNoteForDisplay without the octave argument
+                lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 lastUnit.scrollIntoView({ block: 'center', inline: 'nearest' });
             }
         });
@@ -406,7 +418,6 @@
         notesPanel.addEventListener('mousedown', preventFocusSteal);
         chordsPanel.addEventListener('mousedown', preventFocusSteal); 
         
-        // MODIFIED: Simplified keydown handler. Using a monospace font with white-space: pre handles this better.
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
