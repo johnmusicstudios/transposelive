@@ -93,7 +93,8 @@
             display: inline-block;
             white-space: nowrap; 
             user-select: none;
-            margin: 0 0.1em;
+            /* MODIFIED: Removed margin for tighter default spacing */
+            margin: 0;
         }
         
         .bar-line {
@@ -122,6 +123,13 @@
         }
         .icon { width: 1.1em; height: 1.1em; fill: currentColor; }
         body.keyboard-visible h1 { height: 0; margin: 0; opacity: 0; overflow: hidden; pointer-events: none; }
+
+        /* ADDED: Media query to reduce font size on small screens for better density */
+        @media (max-width: 600px) {
+            #inputTextArea {
+                font-size: 0.95em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -134,7 +142,7 @@
     <div class="toolbar">
         <div class="contextual-controls">
             <div id="notesPanel" class="context-panel">
-                 <div class="tool-row">
+                <div class="tool-row">
                     <button class="note-btn bar-line-btn"><b>|</b></button>
                     <button class="note-btn tag-btn"><b>CHORUS</b></button>
                     <button class="note-btn tag-btn"><b>VERSE</b></button>
@@ -148,7 +156,7 @@
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container"></div></div>
             </div>
             <div id="chordsPanel" class="context-panel">
-                 <div class="tool-row">
+                <div class="tool-row">
                     <button class="note-btn bar-line-btn" style="flex-grow: 0; min-width: 60px;"><b>|</b></button>
                 </div>
                 <div class="button-scroll-wrapper"><div class="button-row" id="note-buttons-container-chords"></div></div>
@@ -261,6 +269,7 @@
             });
         }
         
+        // MODIFIED: Removed automatic space insertion for denser layout.
         function insertMusicUnit(note, extension = '', octave = 0) {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
@@ -290,10 +299,7 @@
             unitSpan.innerHTML = formatNoteForDisplay(note) + extension; 
             range.insertNode(unitSpan);
 
-            const spaceNode = document.createTextNode(' ');
-            range.setStartAfter(unitSpan);
-            range.insertNode(spaceNode);
-
+            // Set cursor right after the inserted note
             range.setStartAfter(unitSpan);
             range.collapse(true);
             selection.removeAllRanges();
@@ -301,6 +307,7 @@
             unitSpan.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
 
+        // MODIFIED: Removed automatic space insertion for denser layout.
         function insertBarLine() {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
@@ -311,19 +318,16 @@
             const barNode = document.createElement('b');
             barNode.className = 'bar-line';
             barNode.textContent = '|';
-            const spaceNode = document.createTextNode(' ');
-
+            
             range.insertNode(barNode);
-            range.setStartAfter(barNode);
-            range.insertNode(spaceNode);
 
-            range.setStartAfter(spaceNode);
+            // Set cursor right after the inserted bar line
+            range.setStartAfter(barNode);
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
         }
 
-        // MODIFIED: Simplified to insert a simple bold tag without brackets or special styling.
         function insertTag(tagText) {
             document.execCommand('insertLineBreak');
 
@@ -415,7 +419,8 @@
                 
                 const selection = window.getSelection();
                 const range = document.createRange();
-                range.setStartAfter(lastUnit.nextSibling || lastUnit);
+                // MODIFIED: Simplified cursor placement as space nodes are gone
+                range.setStartAfter(lastUnit);
                 range.collapse(true);
                 selection.removeAllRanges();
                 selection.addRange(range);
