@@ -11,7 +11,6 @@
             --light-gray: #ccc;
             --bg-color: #f8f8f8;
             --toolbar-bg: #eef2f5;
-            /* ADDED: New color variables for octaves */
             --high-octave-color: hotpink;
             --low-octave-color: orange;
         }
@@ -98,21 +97,26 @@
             user-select: none;
         }
         
+        /* MODIFIED: Replaced the old text-based bar line style with a new visual one. */
         .bar-line {
             display: inline-block;
-            min-width: 2ch;
-            text-align: center;
+            width: 1.5px;
+            /* Taller than the line-height of the text area to make it stand out */
+            height: 1.6em; 
+            background-color: var(--secondary-color);
+            /* A negative vertical-align shifts the element down to center it */
+            vertical-align: -0.3em;
+            /* Provides horizontal spacing */
+            margin: 0 0.4ch;
         }
 
         .blue-notes { color: var(--primary-color); font-weight: bold; }
         .red-chords { color: #dc3545; font-weight: bold; }
         
-        /* MODIFIED: Added specific color rules for high and low octaves */
         .high-octave { color: var(--high-octave-color); }
         .low-octave  { color: var(--low-octave-color); }
 
         .sharp, .flat { font-size: 0.75em; vertical-align: super; }
-        /* MODIFIED: Removed sup and sub styles as they are no longer used for octaves */
 
         button, input[type="text"] {
             background: var(--primary-color); color: white; padding: 8px; font-size: 1.1em;
@@ -224,13 +228,10 @@
                 const originalExtension = unit.dataset.originalExtension || '';
                 if (originalNote) {
                     const transposedNote = transposeNote(originalNote, semitones);
-                    // MODIFIED: Call formatNoteForDisplay without the octave argument
                     unit.innerHTML = formatNoteForDisplay(transposedNote) + originalExtension;
                 }
             });
         }
-
-        // MODIFIED: Simplified function to no longer handle octaves, only sharps/flats.
         function formatNoteForDisplay(note) {
             if (note.length > 1) {
                 const accidental = note.slice(1);
@@ -279,7 +280,6 @@
             unitSpan.dataset.originalOctave = octave; 
             unitSpan.contentEditable = false;
 
-            // MODIFIED: Dynamically build class list to include octave colors
             const classList = ['music-unit'];
             if (extension || insertionMode === 'chords') {
                 classList.push('red-chords');
@@ -293,7 +293,6 @@
             }
             unitSpan.className = classList.join(' ');
             
-            // MODIFIED: Call formatNoteForDisplay without octave
             unitSpan.innerHTML = formatNoteForDisplay(note) + extension; 
             range.insertNode(unitSpan);
             range.setStartAfter(unitSpan);
@@ -303,6 +302,7 @@
             unitSpan.scrollIntoView({ block: 'center', inline: 'nearest' });
         }
 
+        // MODIFIED: This function now inserts an empty element styled purely by CSS.
         function insertBarLine() {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
@@ -312,12 +312,16 @@
 
             const barNode = document.createElement('b');
             barNode.className = 'bar-line';
-            barNode.textContent = '|';
+            // Text content is no longer needed as CSS creates the visual bar.
+            barNode.textContent = ''; 
+
             const spaceNode = document.createTextNode(' ');
 
-            range.insertNode(spaceNode);
+            // Insert the bar, then a space for the cursor to occupy
             range.insertNode(barNode);
+            range.insertNode(spaceNode);
 
+            // Move cursor after the space
             range.setStartAfter(spaceNode);
             range.collapse(true);
             selection.removeAllRanges();
@@ -359,7 +363,7 @@
             if(btn && !btn.classList.contains('bar-line-btn')) {
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
                 const octaveForInsertion = insertionMode === 'chords' ? 0 : currentOctave;
-                insertMusicUnit(btn.dataset.note, '', octaveForInsertion); // Pass empty string for extension
+                insertMusicUnit(btn.dataset.note, '', octaveForInsertion);
             }
         };
         noteButtonsContainer.addEventListener('click', noteInsertHandler);
@@ -377,7 +381,6 @@
                 lastUnit.classList.add('red-chords');
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
-                // MODIFIED: Call formatNoteForDisplay without the octave argument
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 lastUnit.scrollIntoView({ block: 'center', inline: 'nearest' });
             }
