@@ -92,12 +92,14 @@
         .music-unit {
             display: inline-block;
             white-space: nowrap; 
-            user-select: none;
             margin: 0;
         }
         
         .bar-line {
             display: inline-block;
+            /* MODIFIED: Prevent bar lines from adding extra space around them */
+            margin: 0; 
+            padding: 0;
         }
 
         .blue-notes { color: var(--primary-color); font-weight: bold; }
@@ -232,7 +234,6 @@
             return note;
         }
         
-        // MODIFIED: Function now builds the full button row for BOTH notes and chords tabs.
         function renderNoteButtons(container) {
             container.innerHTML = ''; 
 
@@ -243,6 +244,16 @@
                 barBtn.className = 'note-btn bar-line-btn';
                 barBtn.innerHTML = '<b>|</b>';
                 container.appendChild(barBtn);
+
+                const sustainBtn = document.createElement('button');
+                sustainBtn.className = 'note-btn sustain-btn';
+                sustainBtn.innerHTML = '<b>.</b>';
+                container.appendChild(sustainBtn);
+
+                const pauseBtn = document.createElement('button');
+                pauseBtn.className = 'note-btn pause-btn';
+                pauseBtn.innerHTML = '<b>,</b>';
+                container.appendChild(pauseBtn);
             }
 
             const notes = accidentalPreference === 'sharp' ? sharpNotes : flatNotes;
@@ -309,7 +320,11 @@
             unitSpan.innerHTML = formatNoteForDisplay(note) + extension; 
             range.insertNode(unitSpan);
 
-            range.setStartAfter(unitSpan);
+            // Insert a space after the unit for better cursor behavior
+            const space = document.createTextNode(' ');
+            range.insertNode(space);
+            range.setStartAfter(space);
+
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
@@ -325,7 +340,12 @@
             barNode.className = 'bar-line';
             barNode.textContent = '|';
             range.insertNode(barNode);
-            range.setStartAfter(barNode);
+
+            // Insert a space after the unit for better cursor behavior
+            const space = document.createTextNode(' ');
+            range.insertNode(space);
+            range.setStartAfter(space);
+            
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
@@ -349,16 +369,23 @@
             const selection = window.getSelection();
             if (!selection.rangeCount || !selection.anchorNode) return null;
             let node = selection.anchorNode;
-            let precedingNode = node.previousSibling;
-            if (node.nodeType === Node.TEXT_NODE && selection.anchorOffset > 0) {
-                 precedingNode = node.previousSibling;
-            } else if (node.nodeType === Node.ELEMENT_NODE && selection.anchorOffset > 0) {
-                 precedingNode = node.childNodes[selection.anchorOffset - 1];
+            
+            // If cursor is in a text node, check previous sibling from there
+            if (node.nodeType === Node.TEXT_NODE) {
+                let textContent = node.textContent.substring(0, selection.anchorOffset);
+                if (textContent.trim() === '') { // If only whitespace before cursor
+                    node = node.previousSibling;
+                } else {
+                    return null; // There's text, so don't apply extension
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                node = node.childNodes[selection.anchorOffset - 1];
             }
-            while(precedingNode && precedingNode.nodeType === Node.TEXT_NODE) {
-                precedingNode = precedingNode.previousSibling;
+
+            while(node && node.nodeType === Node.TEXT_NODE && node.textContent.trim() === '') {
+                node = node.previousSibling;
             }
-            return (precedingNode && precedingNode.nodeType === Node.ELEMENT_NODE && precedingNode.classList.contains('music-unit')) ? precedingNode : null;
+            return (node && node.nodeType === Node.ELEMENT_NODE && node.classList.contains('music-unit')) ? node : null;
         }
 
         // --- Event Listeners ---
@@ -377,13 +404,16 @@
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
         
-        // MODIFIED: A single, universal handler for the note/utility rows in both panels.
         const universalButtonHandler = (e) => {
             const btn = e.target.closest('.note-btn');
             if (!btn) return;
 
             if (btn.classList.contains('bar-line-btn')) {
                 insertBarLine();
+            } else if (btn.classList.contains('sustain-btn')) { 
+                document.execCommand('insertText', false, '.');
+            } else if (btn.classList.contains('pause-btn')) { 
+                document.execCommand('insertText', false, ',');
             } else if (btn.classList.contains('tag-btn')) {
                 insertTag(btn.textContent);
             } else { // It's a note button
@@ -409,8 +439,11 @@
                 lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
+
+                // Move cursor to after the modified unit
                 const selection = window.getSelection();
                 const range = document.createRange();
+                range.selectNodeContents(lastUnit.nextSibling || lastUnit); // Move to space after, or end of unit
                 range.setStartAfter(lastUnit);
                 range.collapse(true);
                 selection.removeAllRanges();
@@ -453,17 +486,44 @@
         notesPanel.addEventListener('mousedown', preventFocusSteal);
         chordsPanel.addEventListener('mousedown', preventFocusSteal); 
         
+        // MODIFIED: Added smarter backspace handling
         inputTextArea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 document.execCommand('insertLineBreak');
+                return;
+            }
+            
+            // ADDED: Smart backspace for atomic deletion of notes/bars
+            if (e.key === 'Backspace') {
+                const selection = window.getSelection();
+                if (!selection.rangeCount) return;
+
+                const range = selection.getRangeAt(0);
+                if (range.collapsed && range.startOffset === 0 && range.startContainer.previousSibling) {
+                    // This handles case where cursor is at the start of a text node, check the element before it
+                    const nodeBefore = range.startContainer.previousSibling;
+                     if (nodeBefore && nodeBefore.nodeType === Node.ELEMENT_NODE && (nodeBefore.matches('.music-unit, .bar-line, b'))) {
+                        e.preventDefault();
+                        nodeBefore.remove();
+                    }
+                } else if (range.collapsed && range.startOffset > 0) {
+                     // This handles case where cursor is inside the main div or a text node
+                    const nodeBefore = range.startContainer.childNodes[range.startOffset - 1];
+                    if (nodeBefore && nodeBefore.nodeType === Node.ELEMENT_NODE && (nodeBefore.matches('.music-unit, .bar-line, b'))) {
+                        e.preventDefault();
+                        nodeBefore.remove();
+                    }
+                }
             }
         });
 
         saveBtn.addEventListener('click', () => {
             const filename = prompt("Enter a name for your song:", "my-song.jms");
             if (!filename) return;
-            const state = { contentHTML: inputTextArea.innerHTML, semitones: semitones };
+            // Cleanup: remove trailing spaces from lines before saving for cleaner files
+            const content = inputTextArea.innerHTML.replace(/(&nbsp;|\s)+<br>/g, '<br>');
+            const state = { contentHTML: content, semitones: semitones };
             const fileContent = JSON.stringify(state, null, 2);
             const blob = new Blob([fileContent], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -515,3 +575,4 @@
     </script>
 </body>
 </html>
+
