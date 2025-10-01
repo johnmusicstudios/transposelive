@@ -92,8 +92,6 @@
         .music-unit {
             display: inline-block;
             white-space: nowrap; 
-            /* MODIFIED: The following line was removed to enable copy/paste */
-            /* user-select: none; */
             margin: 0;
         }
         
@@ -233,7 +231,6 @@
             return note;
         }
         
-        // MODIFIED: Function now builds sustain and pause buttons.
         function renderNoteButtons(container) {
             container.innerHTML = ''; 
 
@@ -245,7 +242,6 @@
                 barBtn.innerHTML = '<b>|</b>';
                 container.appendChild(barBtn);
 
-                // ADDED: Sustain and Pause buttons
                 const sustainBtn = document.createElement('button');
                 sustainBtn.className = 'note-btn sustain-btn';
                 sustainBtn.innerHTML = '<b>.</b>';
@@ -389,16 +385,15 @@
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
         
-        // MODIFIED: Handler now manages sustain and pause button clicks.
         const universalButtonHandler = (e) => {
             const btn = e.target.closest('.note-btn');
             if (!btn) return;
 
             if (btn.classList.contains('bar-line-btn')) {
                 insertBarLine();
-            } else if (btn.classList.contains('sustain-btn')) { // ADDED
+            } else if (btn.classList.contains('sustain-btn')) {
                 document.execCommand('insertText', false, '.');
-            } else if (btn.classList.contains('pause-btn')) { // ADDED
+            } else if (btn.classList.contains('pause-btn')) {
                 document.execCommand('insertText', false, ',');
             } else if (btn.classList.contains('tag-btn')) {
                 insertTag(btn.textContent);
@@ -474,6 +469,26 @@
                 e.preventDefault();
                 document.execCommand('insertLineBreak');
             }
+        });
+
+        // --- PASTE FUNCTIONALITY ADDED HERE ---
+        inputTextArea.addEventListener('paste', (e) => {
+            // Prevent the browser's default paste action.
+            e.preventDefault();
+
+            // Get the copied content as rich HTML from the clipboard.
+            let pastedHtml = e.clipboardData.getData('text/html');
+
+            // If no HTML is available, fall back to plain text.
+            if (!pastedHtml) {
+                const pastedText = e.clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, pastedText);
+                return;
+            }
+
+            // Use execCommand to insert the rich HTML content at the cursor.
+            // This preserves all the <span> elements, classes, and styles.
+            document.execCommand('insertHTML', false, pastedHtml);
         });
 
         saveBtn.addEventListener('click', () => {
