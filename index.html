@@ -92,7 +92,7 @@
         .music-unit {
             display: inline-block;
             white-space: nowrap; 
-            /* user-select: none;  <-- THIS LINE WAS REMOVED to allow selection and deletion. */
+            user-select: none;
             margin: 0;
         }
         
@@ -291,7 +291,7 @@
             unitSpan.dataset.originalNote = note;
             unitSpan.dataset.originalExtension = extension;
             unitSpan.dataset.originalOctave = octave; 
-            // unitSpan.contentEditable = false; // Kept as false to protect data, but removing user-select in CSS allows deletion.
+            unitSpan.contentEditable = false;
 
             const classList = ['music-unit'];
             if (extension || insertionMode === 'chords') {
@@ -403,12 +403,10 @@
             let lastUnit = findPrecedingMusicUnit();
             if (lastUnit) {
                 const note = lastUnit.dataset.originalNote;
-                // --- MODIFIED LINE: Extension now replaces, not appends ---
-                const newExt = ext; 
+                const newExt = (lastUnit.dataset.originalExtension || '') + ext;
                 lastUnit.classList.remove('blue-notes', 'high-octave', 'low-octave');
                 lastUnit.classList.add('red-chords');
-                // --- MODIFIED LINE: Update dataset with new extension ---
-                lastUnit.dataset.originalExtension = newExt; 
+                lastUnit.dataset.originalExtension = newExt;
                 const transposedNote = transposeNote(note, semitones);
                 lastUnit.innerHTML = formatNoteForDisplay(transposedNote) + newExt;
                 const selection = window.getSelection();
