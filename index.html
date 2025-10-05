@@ -92,8 +92,6 @@
         .music-unit {
             display: inline-block;
             white-space: nowrap; 
-            /* MODIFIED: The following line was removed to enable copy/paste */
-            /* user-select: none; */
             margin: 0;
         }
         
@@ -163,6 +161,7 @@
                 <div class="tool-row">
                     <button id="saveBtn" title="Save"><svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
                     <button id="openBtn" title="Open"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></button>
+                    <button id="printBtn" title="Print to PDF"><svg class="icon" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg></button>
                     <input type="file" id="fileInput" accept=".jms" style="display: none;" />
                 </div>
             </div>
@@ -184,6 +183,7 @@
         const chordButtonsContainer = document.getElementById('chord-buttons-container');
         const saveBtn = document.getElementById('saveBtn');
         const openBtn = document.getElementById('openBtn');
+        const printBtn = document.getElementById('printBtn');
         const fileInput = document.getElementById('fileInput');
         const mainNav = document.querySelector('.main-nav');
         const contextPanels = document.querySelectorAll('.context-panel');
@@ -233,7 +233,6 @@
             return note;
         }
         
-        // MODIFIED: Function now builds sustain and pause buttons.
         function renderNoteButtons(container) {
             container.innerHTML = ''; 
 
@@ -244,13 +243,10 @@
                 barBtn.className = 'note-btn bar-line-btn';
                 barBtn.innerHTML = '<b>|</b>';
                 container.appendChild(barBtn);
-
-                // ADDED: Sustain and Pause buttons
                 const sustainBtn = document.createElement('button');
                 sustainBtn.className = 'note-btn sustain-btn';
                 sustainBtn.innerHTML = '<b>.</b>';
                 container.appendChild(sustainBtn);
-
                 const pauseBtn = document.createElement('button');
                 pauseBtn.className = 'note-btn pause-btn';
                 pauseBtn.innerHTML = '<b>,</b>';
@@ -295,16 +291,14 @@
         function insertMusicUnit(note, extension = '', octave = 0) {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
-
             const range = selection.getRangeAt(0);
             range.deleteContents();
-
             const unitSpan = document.createElement('span');
-            unitSpan.dataset.originalNote = note;
+            const baseNote = transposeNote(note, -semitones);
+            unitSpan.dataset.originalNote = baseNote;
             unitSpan.dataset.originalExtension = extension;
             unitSpan.dataset.originalOctave = octave; 
             unitSpan.contentEditable = false;
-
             const classList = ['music-unit'];
             if (extension || insertionMode === 'chords') {
                 classList.push('red-chords');
@@ -317,10 +311,8 @@
                 }
             }
             unitSpan.className = classList.join(' ');
-            
             unitSpan.innerHTML = formatNoteForDisplay(note) + extension; 
             range.insertNode(unitSpan);
-
             range.setStartAfter(unitSpan);
             range.collapse(true);
             selection.removeAllRanges();
@@ -389,20 +381,19 @@
         document.getElementById('transposeMinus').addEventListener('click', () => { if (semitones > -12) semitones--; updateTransposition(); });
         document.getElementById('transposePlus').addEventListener('click', () => { if (semitones < 12) semitones++; updateTransposition(); });
         
-        // MODIFIED: Handler now manages sustain and pause button clicks.
         const universalButtonHandler = (e) => {
             const btn = e.target.closest('.note-btn');
             if (!btn) return;
 
             if (btn.classList.contains('bar-line-btn')) {
                 insertBarLine();
-            } else if (btn.classList.contains('sustain-btn')) { // ADDED
+            } else if (btn.classList.contains('sustain-btn')) {
                 document.execCommand('insertText', false, '.');
-            } else if (btn.classList.contains('pause-btn')) { // ADDED
+            } else if (btn.classList.contains('pause-btn')) {
                 document.execCommand('insertText', false, ',');
             } else if (btn.classList.contains('tag-btn')) {
                 insertTag(btn.textContent);
-            } else { // It's a note button
+            } else {
                 insertionMode = mainNav.querySelector('.active').dataset.panel === 'chordsPanel' ? 'chords' : 'notes';
                 const octaveForInsertion = insertionMode === 'chords' ? 0 : currentOctave;
                 insertMusicUnit(btn.dataset.note, '', octaveForInsertion);
@@ -410,7 +401,6 @@
         };
         noteButtonsContainer.addEventListener('click', universalButtonHandler);
         noteButtonsContainerChords.addEventListener('click', universalButtonHandler);
-
 
         chordButtonsContainer.addEventListener('click', (e) => {
             const btn = e.target.closest('.chord-btn');
@@ -491,6 +481,87 @@
         });
 
         openBtn.addEventListener('click', () => { fileInput.click(); });
+        
+        // --- MODIFIED: PRINT FUNCTIONALITY WITH HEADER, FOOTER, AND A4 SIZING ---
+        printBtn.addEventListener('click', () => {
+            const content = inputTextArea.innerHTML;
+            const printWindow = window.open('', '_blank');
+            
+            printWindow.document.write('<html><head><title>JMS Chart - Print</title>');
+            printWindow.document.write(`
+                <style>
+                    /* Defines page size and margins for printing */
+                    @page {
+                        size: A4;
+                        margin: 2cm; /* Standard A4 margin */
+                    }
+
+                    body {
+                        font-family: 'Courier New', Courier, monospace;
+                        font-size: 1.1em;
+                        line-height: 1.8;
+                        white-space: pre-wrap; /* Allows text to wrap if a line is too long */
+                        word-wrap: break-word;
+                    }
+
+                    /* --- Header and Footer Setup --- */
+                    /* These elements will repeat on each printed page */
+                    .page-header, .page-footer {
+                        position: fixed;
+                        left: 0;
+                        right: 0;
+                        font-size: 12px;
+                        color: #666;
+                        text-align: center;
+                    }
+
+                    .page-header {
+                        top: 0;
+                        padding-bottom: 10px;
+                        border-bottom: 1px solid #ccc;
+                    }
+
+                    .page-footer {
+                        bottom: 0;
+                        padding-top: 10px;
+                        border-top: 1px solid #ccc;
+                    }
+                    
+                    /* This container holds the main content, with padding to avoid the header/footer */
+                    .main-print-content {
+                        padding-top: 50px;
+                        padding-bottom: 50px;
+                    }
+
+                    /* --- Original Content Styling --- */
+                    .music-unit { display: inline-block; white-space: nowrap; margin: 0; }
+                    .bar-line { display: inline-block; }
+                    .blue-notes { color: #2c698d; font-weight: bold; }
+                    .red-chords { color: #dc3545; font-weight: bold; }
+                    .high-octave { color: hotpink; }
+                    .low-octave { color: orange; }
+                    .sharp, .flat { font-size: 0.75em; vertical-align: super; }
+                </style>
+            `);
+            printWindow.document.write('</head><body>');
+            
+            // Add header, main content, and footer structure to the new window
+            printWindow.document.write('<div class="page-header">Transpose Live - JMS</div>');
+            printWindow.document.write('<div class="main-print-content">' + content + '</div>');
+            printWindow.document.write('<div class="page-footer">https://johnmusicstudios.github.io/transposelive/</div>');
+            
+            printWindow.document.write('</body></html>');
+            
+            printWindow.document.close();
+            printWindow.focus();
+
+            // Use a timeout to ensure content is fully rendered before triggering the print dialog
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 250);
+        });
+
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -500,7 +571,7 @@
                     const state = JSON.parse(event.target.result);
                     inputTextArea.innerHTML = state.contentHTML || '';
                     semitones = state.semitones || 0;
-                    semitoneValue.value = semitones;
+                    updateTransposition();
                 } catch (err) { alert("Error: Could not open the file."); }
             };
             reader.readAsText(file);
