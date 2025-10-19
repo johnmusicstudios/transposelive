@@ -97,11 +97,6 @@
         
         .bar-line {
             display: inline-block;
-            font-weight: bold;
-        }
-        
-        .section-tag {
-            font-weight: bold;
         }
 
         .blue-notes { color: var(--primary-color); font-weight: bold; }
@@ -133,11 +128,14 @@
             }
         }
         
+        /* --- MODIFIED: PRINT STYLES WITH @page RULE --- */
         @media print {
             @page {
                 size: A4;
+                /* Define margins to create space for header and footer */
                 margin: 2.5cm 2cm 2.5cm 2cm;
 
+                /* Header content placed in the top margin box */
                 @top-center {
                     content: "Transpose Live - JMS";
                     font-size: 12px;
@@ -146,6 +144,8 @@
                     width: 100%;
                     padding-bottom: 8px;
                 }
+
+                /* Footer URL content placed in the bottom-left margin box */
                 @bottom-left {
                     content: "https://johnmusicstudios.github.io/transposelive/";
                     font-size: 12px;
@@ -154,32 +154,39 @@
                     width: 100%;
                     padding-top: 8px;
                 }
+                
+                /* Page numbers placed in the bottom-right margin box */
                 @bottom-right {
-                    content: "Page " counter(page);
+                    content: "" counter(page);
                     font-size: 12px;
                     color: #666;
                     border-top: 1px solid #ccc;
                     padding-top: 8px;
                 }
             }
+
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
+            
             body {
                 height: auto;
                 overflow: visible;
                 background: none;
             }
+
             .toolbar, h1 {
                 display: none !important;
             }
+
             .main-content {
                 display: block;
                 padding: 0;
                 height: auto;
                 overflow: visible;
             }
+
             #inputTextArea {
                 height: auto !important;
                 overflow: visible !important;
@@ -382,30 +389,17 @@
             unitSpan.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
 
-        // --- MODIFIED: The robust fix for the bar line insertion issue ---
         function insertBarLine() {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
             const range = selection.getRangeAt(0);
             range.deleteContents();
-
-            // 1. Create the bar line span and make it non-editable
-            const barNode = document.createElement('span');
+            const barNode = document.createElement('b');
             barNode.className = 'bar-line';
             barNode.textContent = '|';
-            barNode.contentEditable = false;
-
-            // 2. Create an invisible, zero-width space to act as a "breaker"
-            const zeroWidthSpace = document.createTextNode('\u200B');
-
-            // 3. Insert the nodes: bar line first, then the invisible space
-            range.insertNode(zeroWidthSpace);
             range.insertNode(barNode);
-
-            // 4. Place the cursor AFTER the invisible space, ensuring a clean typing start
-            range.setStartAfter(zeroWidthSpace);
+            range.setStartAfter(barNode);
             range.collapse(true);
-
             selection.removeAllRanges();
             selection.addRange(range);
         }
@@ -415,12 +409,9 @@
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
             const range = selection.getRangeAt(0);
-
-            const tagNode = document.createElement('span');
-            tagNode.className = 'section-tag';
+            const tagNode = document.createElement('b');
             tagNode.textContent = tagText;
             range.insertNode(tagNode);
-            
             range.setStartAfter(tagNode);
             selection.removeAllRanges();
             selection.addRange(range);
