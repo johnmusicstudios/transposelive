@@ -127,6 +127,75 @@
                 font-size: 0.95em;
             }
         }
+        
+        /* --- NEW: MOBILE-FRIENDLY PRINT STYLES --- */
+        @media print {
+            @page {
+                size: A4;
+                margin: 2cm;
+            }
+
+            /* Force colors to print */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            body {
+                height: auto;
+                overflow: visible;
+                background: none;
+            }
+
+            /* Hide all UI elements during printing */
+            .toolbar, h1 {
+                display: none !important;
+            }
+
+            /* Adjust main content for printing */
+            .main-content {
+                display: block;
+                padding: 0;
+                height: auto;
+                overflow: visible;
+            }
+
+            #inputTextArea {
+                height: auto !important;
+                overflow: visible !important;
+                border: none;
+                padding: 0;
+                white-space: pre-wrap; /* Allow wrapping */
+                word-wrap: break-word;
+            }
+
+            /* Create header and footer for print pages */
+            body::before {
+                content: "Transpose Live - JMS";
+                position: fixed;
+                top: 0.5cm;
+                left: 2cm;
+                right: 2cm;
+                text-align: center;
+                font-size: 12px;
+                color: #666;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #ccc;
+            }
+
+            body::after {
+                content: "https://johnmusicstudios.github.io/transposelive/";
+                position: fixed;
+                bottom: 0.5cm;
+                left: 2cm;
+                right: 2cm;
+                text-align: center;
+                font-size: 12px;
+                color: #666;
+                padding-top: 10px;
+                border-top: 1px solid #ccc;
+            }
+        }
     </style>
 </head>
 <body>
@@ -482,84 +551,9 @@
 
         openBtn.addEventListener('click', () => { fileInput.click(); });
         
-        // --- MODIFIED: PRINT FUNCTIONALITY WITH HEADER, FOOTER, AND A4 SIZING ---
+        // --- MODIFIED: SIMPLIFIED, MOBILE-FRIENDLY PRINT ---
         printBtn.addEventListener('click', () => {
-            const content = inputTextArea.innerHTML;
-            const printWindow = window.open('', '_blank');
-            
-            printWindow.document.write('<html><head><title>JMS Chart - Print</title>');
-            printWindow.document.write(`
-                <style>
-                    /* Defines page size and margins for printing */
-                    @page {
-                        size: A4;
-                        margin: 2cm; /* Standard A4 margin */
-                    }
-
-                    body {
-                        font-family: 'Courier New', Courier, monospace;
-                        font-size: 1.1em;
-                        line-height: 1.8;
-                        white-space: pre-wrap; /* Allows text to wrap if a line is too long */
-                        word-wrap: break-word;
-                    }
-
-                    /* --- Header and Footer Setup --- */
-                    /* These elements will repeat on each printed page */
-                    .page-header, .page-footer {
-                        position: fixed;
-                        left: 0;
-                        right: 0;
-                        font-size: 12px;
-                        color: #666;
-                        text-align: center;
-                    }
-
-                    .page-header {
-                        top: 0;
-                        padding-bottom: 10px;
-                        border-bottom: 1px solid #ccc;
-                    }
-
-                    .page-footer {
-                        bottom: 0;
-                        padding-top: 10px;
-                        border-top: 1px solid #ccc;
-                    }
-                    
-                    /* This container holds the main content, with padding to avoid the header/footer */
-                    .main-print-content {
-                        padding-top: 50px;
-                        padding-bottom: 50px;
-                    }
-
-                    /* --- Original Content Styling --- */
-                    .music-unit { display: inline-block; white-space: nowrap; margin: 0; }
-                    .bar-line { display: inline-block; }
-                    .blue-notes { color: #2c698d; font-weight: bold; }
-                    .red-chords { color: #dc3545; font-weight: bold; }
-                    .high-octave { color: hotpink; }
-                    .low-octave { color: orange; }
-                    .sharp, .flat { font-size: 0.75em; vertical-align: super; }
-                </style>
-            `);
-            printWindow.document.write('</head><body>');
-            
-            // Add header, main content, and footer structure to the new window
-            printWindow.document.write('<div class="page-header">Transpose Live - JMS</div>');
-            printWindow.document.write('<div class="main-print-content">' + content + '</div>');
-            printWindow.document.write('<div class="page-footer">https://johnmusicstudios.github.io/transposelive/</div>');
-            
-            printWindow.document.write('</body></html>');
-            
-            printWindow.document.close();
-            printWindow.focus();
-
-            // Use a timeout to ensure content is fully rendered before triggering the print dialog
-            setTimeout(() => {
-                printWindow.print();
-                printWindow.close();
-            }, 250);
+            window.print();
         });
 
         fileInput.addEventListener('change', (e) => {
