@@ -97,10 +97,10 @@
         
         .bar-line {
             display: inline-block;
-            font-weight: bold; /* MODIFIED: Added to maintain appearance */
+            font-weight: bold;
         }
         
-        .section-tag { /* NEW: Style for CHORUS, VERSE, etc. */
+        .section-tag {
             font-weight: bold;
         }
 
@@ -382,18 +382,30 @@
             unitSpan.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
 
+        // --- MODIFIED: The robust fix for the bar line insertion issue ---
         function insertBarLine() {
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
             const range = selection.getRangeAt(0);
             range.deleteContents();
-            // MODIFIED: Use a SPAN instead of B to avoid style inheritance
+
+            // 1. Create the bar line span and make it non-editable
             const barNode = document.createElement('span');
             barNode.className = 'bar-line';
             barNode.textContent = '|';
+            barNode.contentEditable = false;
+
+            // 2. Create an invisible, zero-width space to act as a "breaker"
+            const zeroWidthSpace = document.createTextNode('\u200B');
+
+            // 3. Insert the nodes: bar line first, then the invisible space
+            range.insertNode(zeroWidthSpace);
             range.insertNode(barNode);
-            range.setStartAfter(barNode);
+
+            // 4. Place the cursor AFTER the invisible space, ensuring a clean typing start
+            range.setStartAfter(zeroWidthSpace);
             range.collapse(true);
+
             selection.removeAllRanges();
             selection.addRange(range);
         }
@@ -403,11 +415,12 @@
             const selection = window.getSelection();
             if (!selection.rangeCount || !inputTextArea.contains(selection.anchorNode)) return;
             const range = selection.getRangeAt(0);
-            // MODIFIED: Use a styled SPAN instead of a B tag
+
             const tagNode = document.createElement('span');
             tagNode.className = 'section-tag';
             tagNode.textContent = tagText;
             range.insertNode(tagNode);
+            
             range.setStartAfter(tagNode);
             selection.removeAllRanges();
             selection.addRange(range);
