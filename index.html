@@ -128,14 +128,43 @@
             }
         }
         
-        /* --- NEW: MOBILE-FRIENDLY PRINT STYLES --- */
+        /* --- MODIFIED: PRINT STYLES WITH @page RULE --- */
         @media print {
             @page {
                 size: A4;
-                margin: 2cm;
+                /* Define margins to create space for header and footer */
+                margin: 2.5cm 2cm 2.5cm 2cm;
+
+                /* Header content placed in the top margin box */
+                @top-center {
+                    content: "Transpose Live - JMS";
+                    font-size: 12px;
+                    color: #666;
+                    border-bottom: 1px solid #ccc;
+                    width: 100%;
+                    padding-bottom: 8px;
+                }
+
+                /* Footer URL content placed in the bottom-left margin box */
+                @bottom-left {
+                    content: "https://johnmusicstudios.github.io/transposelive/";
+                    font-size: 12px;
+                    color: #666;
+                    border-top: 1px solid #ccc;
+                    width: 100%;
+                    padding-top: 8px;
+                }
+                
+                /* Page numbers placed in the bottom-right margin box */
+                @bottom-right {
+                    content: "Page " counter(page);
+                    font-size: 12px;
+                    color: #666;
+                    border-top: 1px solid #ccc;
+                    padding-top: 8px;
+                }
             }
 
-            /* Force colors to print */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -147,12 +176,10 @@
                 background: none;
             }
 
-            /* Hide all UI elements during printing */
             .toolbar, h1 {
                 display: none !important;
             }
 
-            /* Adjust main content for printing */
             .main-content {
                 display: block;
                 padding: 0;
@@ -165,35 +192,8 @@
                 overflow: visible !important;
                 border: none;
                 padding: 0;
-                white-space: pre-wrap; /* Allow wrapping */
+                white-space: pre-wrap;
                 word-wrap: break-word;
-            }
-
-            /* Create header and footer for print pages */
-            body::before {
-                content: "Transpose Live - JMS";
-                position: fixed;
-                top: 0.5cm;
-                left: 2cm;
-                right: 2cm;
-                text-align: center;
-                font-size: 12px;
-                color: #666;
-                padding-bottom: 10px;
-                border-bottom: 1px solid #ccc;
-            }
-
-            body::after {
-                content: "https://johnmusicstudios.github.io/transposelive/";
-                position: fixed;
-                bottom: 0.5cm;
-                left: 2cm;
-                right: 2cm;
-                text-align: center;
-                font-size: 12px;
-                color: #666;
-                padding-top: 10px;
-                border-top: 1px solid #ccc;
             }
         }
     </style>
@@ -551,7 +551,6 @@
 
         openBtn.addEventListener('click', () => { fileInput.click(); });
         
-        // --- MODIFIED: SIMPLIFIED, MOBILE-FRIENDLY PRINT ---
         printBtn.addEventListener('click', () => {
             window.print();
         });
